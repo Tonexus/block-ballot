@@ -1,55 +1,66 @@
+import xmlrpc.client
+
+# s = xmlrpc.client.ServerProxy('http://localhost:12346/ISSUER')
+
+
 # Defines the Ballot Class
 
 class Wallet:
 
-	def __init__(self, nodes):
+	def __init__(self, node_addresses):
 		""" Makes the public private key pair"""
 		self.public = None
 		self.private = None
-		self.nodes = nodes
+		self.node_addresses = node_addresses
+		self.nodes = []
+		for node_address in node_addresses:
+			self.nodes.append(xmlrpc.client.ServerProxy(node_address))
 
 
-	def make_transaction(public_key):
+	def make_transaction(self, public_key):
 		""" send 1 coin from self to public key in the chain"""
 
-	def check_balance(public_key):
+	def check_balance(self, public_key):
 		""" return the balance in a public key on the chain"""
 
 class Ballot(Wallet):
 	
-	def __init__(self, nodes, issuer):
+	def __init__(self, config):
 		""" Do some initialization here"""
-		super(self, nodes)
-		self.issuer = issuer
+		super().__init__(config['node_addresses'])
+		self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
+		self.issuer_address = config['issuer_address']
 
-	def register():
+	def register(self):
 		""" Register to vote by sending rpc call to Issuer"""
+		self.issuer.register(self.public)
 
-	def vote(public_key):
+	def vote(self, public_key):
 		""" Vote for the person in the public addr """
 
-	def tally(public_keys):
+	def tally(self, public_keys):
 		""" Tally the votes for the public addresses in publicAddrs"""
 
-	def verify_vote():
+	def verify_vote(self):
 		""" Verify my vote is in the blockchain """
 
 class Issuer(Wallet):
 
-	def __init__(self, nodes, pow_config):
-		super(nodes)
+	def __init__(self, config):
+		super().__init__(config['node_addresses'])
 		self.voters = []
-		self.pow_config = pow_config
+		self.pow_config = config['pow_config']
 
-	def register(public_key):
+	def register(self, public_key):
 		""" give the public key a coin on the chain"""
-		self.voters.append(publicKey)
+		self.voters.append(public_key)
+		return True
 		# look up in the chain probably
 
-	def list_register_voters():
+	def list_registered_voters(self):
 		""" look up all public key addresses on the block chain"""
 		return self.voters
 
-	def tally(public_keys):
-		""" Tally the votes for specific users
+	def tally(self, public_keys):
+		""" Tally the votes for specific users"""
 
