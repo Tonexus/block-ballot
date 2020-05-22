@@ -1,6 +1,7 @@
-import json
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+
+import merkle
 
 class Block:
     """data corresponding to a single block"""
@@ -30,10 +31,10 @@ class LogicalBlock:
         # position in block chain
         self.block_id = block_id
         # merkle tree of transactions attached to block
-        self.tree = MerkleTree(transactions) # todo implement this
-    
-    def build_block_data(nonce):
-        return Block(self.prev_block_hash, nonce, self.tree.root_hash)
+        self.tree = merkle.MerkleTree(transactions) # todo implement this
+
+    def build_block_data(self, nonce):
+        return Block(self.prev_block_hash, nonce, self.tree.get_root_hash())
 
     def get_transaction(self, i):
         # look through merkle tree for transaction

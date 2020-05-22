@@ -1,4 +1,3 @@
-import json
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -23,8 +22,8 @@ class Transaction:
             ),
             hashes.SHA256()
         ).hex()
-    
-    def verify(src_pub_key):
+
+    def verify(self, src_pub_key):
         # todo verify that the signature matches the transaction
         pass
 
