@@ -1,4 +1,6 @@
 import json
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 
 class Block:
     def __init__(self, prev_hash, nonce, root_hash):
@@ -9,13 +11,12 @@ class Block:
         # root hash of merkle tree
         self.root_hash = root_hash
 
-    def to_string(self):
-        self_dict = {
-            "prev_hash": self.prev_hash,
-            "nonce": self.nonce,
-            "root_hash": self.root_hash
-        }
-        return json.dumps(self_dict)
+    def to_digest(self):
+        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        digest.update(bytes.fromhex(self.prev_hash))
+        digest.update(bytes.fromhex(self.nonce))
+        digest.update(bytes.fromhex(self.root_hash))
+        return digest.finalize().hex()
 
 class GenesisBlock:
     pass
