@@ -33,7 +33,7 @@ class Ballot(Wallet):
 
 	def register(self):
 		""" Register to vote by sending rpc call to Issuer"""
-		self.issuer.register(self.public)
+		return self.issuer.register(self.public)
 
 	def vote(self, public_key):
 		""" Vote for the person in the public addr """
