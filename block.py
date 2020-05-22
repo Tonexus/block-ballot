@@ -3,6 +3,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 
 class Block:
+    """data corresponding to a single block"""
     def __init__(self, prev_hash, nonce, root_hash):
         # hash of previous block
         self.prev_hash = prev_hash
@@ -11,7 +12,7 @@ class Block:
         # root hash of merkle tree
         self.root_hash = root_hash
 
-    def to_digest(self):
+    def to_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.prev_hash))
         digest.update(bytes.fromhex(self.nonce))
@@ -22,12 +23,18 @@ class GenesisBlock:
     pass
 
 class LogicalBlock:
-    def __init__(self, block, tree=None):
-        # actual block
-        self.block = block
+    """block data and metadata for processor node"""
+    def __init__(self, prev_block_hash, block_id, transactions):
+        # hash of previous block
+        self.prev_block_hash = prev_block_hash
+        # position in block chain
+        self.block_id = block_id
         # merkle tree of transactions attached to block
-        self.tree = tree
+        self.tree = MerkleTree(transactions) # todo implement this
+    
+    def build_block_data(nonce):
+        return Block(self.prev_block_hash, nonce, self.tree.root_hash)
 
     def get_transaction(self, i):
         # look through merkle tree for transaction
-        pass
+        return self.tree.get(i)
