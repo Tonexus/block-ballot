@@ -33,7 +33,7 @@ class Transaction:
         """verifies that the signature matches the transaction, returns true if valid"""
         try:
             src_pub_key.verify(
-                self.signature,
+                bytes.fromhex(self.signature),
                 bytes.fromhex(self.digest),
                 padding.PSS(
                     mgf=padding.MGF1(hashes.SHA256()),
