@@ -1,6 +1,7 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.exceptions import InvalidSignature
 
 class Transaction:
     """data corresponding to a single transaction"""
@@ -29,8 +30,20 @@ class Transaction:
         return digest.finalize().hex()
 
     def verify(self, src_pub_key):
-        # todo verify that the signature matches the transaction
-        pass
+        """verifies that the signature matches the transaction, returns true if valid"""
+        try:
+            src_pub_key.verify(
+                self.signature,
+                bytes.fromhex(self.digest),
+                padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH
+                ),
+                hashes.SHA256()
+            )
+            return True
+        except InvalidSignature:
+            return False
 
 class LogicalTransaction:
     """transaction data and metadata to pass to processor node via RPC"""
@@ -38,3 +51,7 @@ class LogicalTransaction:
         # tuple of source block id and transaction id within the block
         self.src_transact_id = src_transact_id
         self.transact_data = Transaction(dst_pub_key, src_transact_data, src_prv_key)
+
+    def verify(self, src_pub_key):
+        """verifies that the signature matches the transaction, returns true if valid"""
+        return self.transact_data.verify(src_pub_key)
