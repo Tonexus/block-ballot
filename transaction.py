@@ -9,9 +9,7 @@ class Transaction:
         # calculate digest (named so because hash is python keyword)
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.dst_pub_key))
-        digest.update(bytes.fromhex(src_transact_data.dst_pub_key))
-        digest.update(bytes.fromhex(src_transact_data.digest))
-        digest.update(bytes.fromhex(src_transact_data.signature))
+        digest.update(bytes.fromhex(src_transact_data.to_hash()))
         self.digest = digest.finalize().hex()
         # sign digest
         self.signature = src_prv_key.sign(
@@ -22,6 +20,13 @@ class Transaction:
             ),
             hashes.SHA256()
         ).hex()
+
+    def to_hash(self):
+        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        digest.update(bytes.fromhex(self.dst_pub_key))
+        digest.update(bytes.fromhex(self.digest))
+        digest.update(bytes.fromhex(self.signature))
+        return digest.finalize().hex()
 
     def verify(self, src_pub_key):
         # todo verify that the signature matches the transaction
