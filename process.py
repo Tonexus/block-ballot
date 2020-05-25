@@ -9,6 +9,7 @@ class ProcessNode(object):
 
     def __init__(self, initblockchain, node_addresses, node_id, issuer_id, voters_map, config):
         self.blockchain = initblockchain
+        self.blockheaders = []
         self.node_addresses = node_addresses
         self.nodes = []
         for node_address in node_addresses:
@@ -175,9 +176,108 @@ class ProcessNode(object):
     def get_blockchain(self):
         return self.blockchain
 
-    def RPC_get_blockchain(self, id):
-        return self.nodes[id].get_blockchain()
+    def get_len_hash(self):
+        return len(self.blockchain), self.blockchain[len(self.blockchain)-1].block.to_hash()
+    
+    def get_block_headers(self):
+        return self.blockheaders
 
+    def verfity_blockheaders(self,blockheaders):
+        for i in range(1,len(blockheaders)):
+            if(blockheaders[i].prev_hash!=blockheaders[i-1].to_hash()):
+                return False
+        return True
+
+    def get_block(self, bid):
+        return self.blockchain[bid]
+
+    def RPC_get_block(self, bid, nid):
+        self.blockchain[bid] = self.nodes[nid].get_block(bid)
+
+    def headers_first_DL(self, group, len_bc):
+        self.blockheaders = []
+        
+        flag = 0
+        for id in group:
+            blockheaders = self.nodes[id].get_block_headers()
+            if(self.verfity_blockheaders(blockheaders)):
+                flag = 1
+                break
+            else:
+                group.remove(id)
+
+        if(flag==0):
+            return False
+
+        self.blockchain = [None for i in range(len_bc)]
+        coins_from_issuer={}
+        coins_from_voter={}
+        len_gp = len(group)
+
+        cur = 1
+        for i in range(0,len_bc,len_gp):
+            for j in range(len_gp):
+                if(i+j>=len_bc):
+                    break
+                t1 = threading.Thread(self.get_block,(i,group[j]))
+                t1.start()
+
+            end = min(i+j, len_bc)
+            #check pointers
+            for k in range(cur, end):
+                if(self.blockchain[k].prev_block_hash!=self.blockchain[k-1].block.to_hash()):
+                    group.remove(k-cur)
+                    return False
+
+            for k in range(cur, end):
+                logic_block = self.blockchain[cur]
+                #check transactions
+                for transaction in logic_block.transactions:
+                    if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
+                        group.remove(k-cur)
+                        return False
+                #check block.roothash
+                tmp_MerkleTree = MerkleTree(logic_block.transactions)
+                if(tmp_MerkleTree.get_hash!=logic_block.block.root_hash):
+                    group.remove(k-cur)
+                    return False
+            
+            cur = cur+len_gp
+
+        self.coins_from_issuer = coins_from_issuer
+        self.coins_from_voter = coins_from_voter
+
+        self.cur_coins_from_issuer = coins_from_issuer
+        self.cur_coins_from_voter = coins_from_voter
+        self.pending_transactions=[]
+        
+        return True
+
+    def RPC_get_blockchain(self):
+        len_hash_map = {}
+        len_hash_list = []
+        for i in range(len(self.nodes)):
+            t_len, t_hash = self.nodes[i].get_len_hash()
+            key = str(t_len)+"::"+str(t_hash)
+            if(len_hash_map[key]==None):
+                len_hash_map[key] = []
+            len_hash_map[key].append(i)
+
+        for key in len_hash_map.keys():
+            strs = key.split("::")
+            len_hash_list.append([strs[0],strs[1]])
+
+        len_hash_list.sort(reverse=True, key=lambda x:x[0]) 
+
+        for group_key in len_hash_list:
+            key = group_key[0]+"::"+group_key[1]
+            group = len_hash_map[key]
+
+            while(len(group)!=0):
+                if(self.headers_first_DL(group, int(group_key[0]))):
+                    return True
+
+        return False            
 
     def tally(self, public_keys):
     	""" Tally the votes for the public addresses in publicAddrs"""
