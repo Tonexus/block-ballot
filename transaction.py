@@ -1,16 +1,21 @@
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 
 class Transaction:
     """data corresponding to a single transaction"""
     def __init__(self, dst_pub_key, src_transact_data, src_prv_key):
-        self.dst_pub_key = dst_pub_key
+        # stored as ASCII PEM data in bytes
+        self.dst_pub_key = dst_pub_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).hex()
         # calculate digest (named so because hash is python keyword)
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.dst_pub_key))
-        digest.update(bytes.fromhex(src_transact_data.to_hash()))
+        if src_transact_data is not None:
+            digest.update(bytes.fromhex(src_transact_data.to_hash()))
         self.digest = digest.finalize().hex()
         # sign digest
         self.signature = src_prv_key.sign(
