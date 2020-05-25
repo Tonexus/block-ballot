@@ -60,3 +60,9 @@ class LogicalTransaction:
     def verify(self, src_pub_key):
         """verifies that the signature matches the transaction, returns true if valid"""
         return self.transact_data.verify(src_pub_key)
+
+    def get_src(self):
+        pass
+
+    def get_dst(self):
+        pass
