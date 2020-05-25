@@ -64,3 +64,6 @@ class Issuer(Wallet):
 	def tally(self, public_keys):
 		""" Tally the votes for specific users"""
 
+	def get_pkey(self, src):
+		pass
+

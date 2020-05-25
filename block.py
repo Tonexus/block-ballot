@@ -25,13 +25,16 @@ class GenesisBlock:
 
 class LogicalBlock:
     """holds block data and metadata for processor node"""
-    def __init__(self, prev_block_hash, block_id, transactions):
+    def __init__(self, prev_block_hash, block_id, transactions, nonce):
         # hash of previous block
         self.prev_block_hash = prev_block_hash
         # position in block chain
         self.block_id = block_id
         # merkle tree of transactions attached to block
         self.tree = merkle.MerkleTree(transactions)
+
+        self.block = self.build_block_data(nonce)
+        self.transcations = transactions
 
     def build_block_data(self, nonce):
         """builds a block from the previously stored data and input nonce (in hex)"""
