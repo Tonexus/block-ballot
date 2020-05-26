@@ -5,6 +5,9 @@ from merkle import MerkleTree
 import xmlrpc.client
 import threading
 
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+
 class ProcessNode(object):
 
     def __init__(self, initblockchain, node_addresses, node_id, issuer_id, voters_map, config):
@@ -295,11 +298,49 @@ class ProcessNode(object):
                 return True
         return False        
 
+    def get_hash_path(self, block_id, transaction_id):
+        return self.blockchain[block_id].get_hash_path(transaction_id)
+
+    def test_hash_path(self, hash1, hash2):
+        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        digest.update(bytes.fromhex(hash1))
+        digest.update(bytes.fromhex(hash2))
+        return digest.finalize().hex()
+
+    def SPV_transaction(self, block_id, transaction_id, transaction_hash):
+        #Simplified Payment Verification
+        con_cnt = 0
+        spv_cnt = 0
+        cur_hash  = transaction_hash
+        for node in self.nodes:
+            if(node.check_connection()):
+                con_cnt += 1
+
+            block_headers = node.get_block_headers()
+            if(not self.verfity_blockheaders(block_headers)):
+                continue
+            hash_path = node.get_hash_path(block_id, transaction_id)
+            if(len(hash_path)==0 or len(block_headers)<=block_id):
+                continue
+
+            for i in range(len(hash_path)):
+                cur_hash = self.test_hash_path(cur_hash, hash_path[i])
+
+            if(cur_hash != block_headers[block_id].root_hash):
+                continue
+            else:
+                spv_cnt+=1
+
+        if(spv_cnt*2>con_cnt):
+            return True
+        else:
+            return False        
+
     def getnext(self,nonce):
         return nonce+1
-
-    def check_hash(self,hash):
-        pass
+    def check_hash(self, hash):
+        #pre 0
+        return True
 
     def mining(self):
         nonce = 0
@@ -319,7 +360,7 @@ class ProcessNode(object):
                 self.add_block(newblock,-1)
                 self.RPC_add_block(newblock)
                 self.interrupt_mining = 1
-                break;    
+                break 
 
             nonce = self.getnext(nonce)
 
