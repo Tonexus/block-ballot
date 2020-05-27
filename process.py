@@ -47,6 +47,11 @@ class ProcessNode(object):
         return self.voters_map[id]
 
     #replace bc1 with bc2
+    #1.check length of blockchains
+    #2.check pointers of blockchains
+    #3.check each transaction
+    #4.check root hash of merkle tree
+    #5.update some state data
     def verify_blockchain(self,blockchain1, blockchain2):
         """ check length """
         if(blockchain1!=None and len(blockchain1)>=len(blockchain2)):
@@ -78,7 +83,9 @@ class ProcessNode(object):
 
         return True        
 
-
+    #other process nodes or Issuer can call this
+    #if the blockchain is verified, update self.blockchain with it
+    #else let the caller update their with self.blockchain
     def update_blockchain(self, blockchain, id):
         #lock here
         self.lock.acquire()
@@ -93,12 +100,14 @@ class ProcessNode(object):
             t1 = threading.Thread(self.nodes[id].update_blockchain(self.blockchain, self.id))
             t1.start()
 
+
     def RPC_update_blockchain(self):
         for node in self.nodes:
             t1 = threading.Thread(node.update_blockchain, (self.blockchain, self.id))
             t1.start()
 
-
+    #similar to verify blockchain
+    #if succeeds, update state data
     def verify_block(self, newblock):    
         if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
             return False
@@ -124,6 +133,9 @@ class ProcessNode(object):
 
         return True       
 
+    #1.check the validation of sender and receiver
+    #2.check signature
+    #3.check with the wallet records
     def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter):
         src = transaction.get_src()
         dst = transaction.get_dst()
@@ -146,7 +158,7 @@ class ProcessNode(object):
 
         return True
 
-
+    #can call by other process nodes or just this node 
     def add_transaction(self, transaction, id):
         #lock here
         self.lock.acquire()
@@ -164,11 +176,14 @@ class ProcessNode(object):
             t1 = threading.Thread(node.add_transaction,(transaction, self.id))
             t1.start()
 
+    #if the verification fails, let the caller update their with self.blockchain
     def add_block(self, newblock, id):  
         #lock here
         self.lock.acquire()
         if(not self.verify_block(newblock)):
             self.lock.release()
+            if(id==-1):
+                return False
             t1 = threading.Thread(self.nodes[id].update_blockchain,(self.blockchain))
             t1.start()
             return False
@@ -201,12 +216,13 @@ class ProcessNode(object):
     def get_block(self, bid):
         return self.blockchain[bid]
 
+    #download and update one block
     def RPC_get_block(self, bid, nid):
         self.blockchain[bid] = self.nodes[nid].get_block(bid)
 
     #choose a group of nodes with same len and hash
     #download headers and verify
-    #download blocks parellel and verify
+    #download blocks parellel and verify at the same time
     #if fail, retry
     def headers_first_DL(self, group, len_bc):
         self.blockheaders = []
@@ -269,6 +285,7 @@ class ProcessNode(object):
 
     #initialization
     #download the blockchain from a group of nodes in parellel
+    #choose from the group with largest len, if fails, choose next group
     def RPC_get_blockchain(self):
         len_hash_map = {}
         len_hash_list = []
@@ -313,6 +330,7 @@ class ProcessNode(object):
                 return True
         return False        
 
+    #the hash path in Merkle Tree
     def get_hash_path(self, block_id, transaction_id):
         return self.blockchain[block_id].get_hash_path(transaction_id)
 
@@ -323,8 +341,11 @@ class ProcessNode(object):
         digest.update(bytes.fromhex(hash2))
         return digest.finalize().hex()
 
+    #Simplified Payment Verification
+    #1.just loadload headers and hash path of the transacton in the Merkle tree
+    #2.verify them, if half of the nodes succeed, return True
     def SPV_transaction(self, block_id, transaction_id, transaction_hash):
-        #Simplified Payment Verification
+        
         con_cnt = 0
         spv_cnt = 0
         cur_hash  = transaction_hash
@@ -358,6 +379,7 @@ class ProcessNode(object):
         #pre 0
         return True
 
+    
     def mining(self):
         nonce = 0
         pre_hash = 0
