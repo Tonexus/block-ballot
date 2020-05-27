@@ -18,12 +18,14 @@ class ProcessNode(object):
         for node_address in node_addresses:
             self.nodes.append(xmlrpc.client.ServerProxy(node_address))
 
+        #wallet records on blockchain
         self.coins_from_issuer={}
         self.coins_from_voter={}
+        #wallet records plus pending_transactions
         self.cur_coins_from_issuer={}
         self.cur_coins_from_voter={}
 
-        self.s_coins_map={}
+        #self.s_coins_map={}
         self.id = node_id
 
         self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
@@ -38,6 +40,7 @@ class ProcessNode(object):
 
         self.pre_0 = 10
 
+    #get a voter's public key
     def get_pkey(self, id):
         if(self.voters_map[id]==None):
             self.voters_map[id] = self.issuer.get_pkey(id)
@@ -85,6 +88,8 @@ class ProcessNode(object):
             self.lock.release()
         else:
             self.lock.release()
+            if(id==-1):
+                return 
             t1 = threading.Thread(self.nodes[id].update_blockchain(self.blockchain, self.id))
             t1.start()
 
@@ -92,6 +97,7 @@ class ProcessNode(object):
         for node in self.nodes:
             t1 = threading.Thread(node.update_blockchain, (self.blockchain, self.id))
             t1.start()
+
 
     def verify_block(self, newblock):    
         if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
@@ -179,6 +185,7 @@ class ProcessNode(object):
     def get_blockchain(self):
         return self.blockchain
 
+    #get the len of blockchain and current block hash
     def get_len_hash(self):
         return len(self.blockchain), self.blockchain[len(self.blockchain)-1].block.to_hash()
     
@@ -197,6 +204,10 @@ class ProcessNode(object):
     def RPC_get_block(self, bid, nid):
         self.blockchain[bid] = self.nodes[nid].get_block(bid)
 
+    #choose a group of nodes with same len and hash
+    #download headers and verify
+    #download blocks parellel and verify
+    #if fail, retry
     def headers_first_DL(self, group, len_bc):
         self.blockheaders = []
         
@@ -256,6 +267,8 @@ class ProcessNode(object):
         
         return True
 
+    #initialization
+    #download the blockchain from a group of nodes in parellel
     def RPC_get_blockchain(self):
         len_hash_map = {}
         len_hash_list = []
@@ -273,6 +286,8 @@ class ProcessNode(object):
         len_hash_list.sort(reverse=True, key=lambda x:x[0]) 
 
         for group_key in len_hash_list:
+            if(int(group_key[0])<=len(self.blockchain)):
+                break
             key = group_key[0]+"::"+group_key[1]
             group = len_hash_map[key]
 
@@ -301,6 +316,7 @@ class ProcessNode(object):
     def get_hash_path(self, block_id, transaction_id):
         return self.blockchain[block_id].get_hash_path(transaction_id)
 
+    #return hash of (hash1, hash2)
     def test_hash_path(self, hash1, hash2):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(hash1))
