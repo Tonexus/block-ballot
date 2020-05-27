@@ -1,5 +1,5 @@
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 
 import merkle
 
@@ -21,7 +21,19 @@ class Block:
         return digest.finalize().hex()
 
 class GenesisBlock:
-    pass
+    def __init__(self, issr_pub_key, metadata):
+        self.issr_pub_key = issr_pub_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).hex()
+        # metadata as ascii string
+        self.metadata = metadata
+
+    def to_hash(self):
+        digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        digest.update(bytes.fromhex(self.issr_pub_key))
+        digest.update(self.metadata.encode("ascii"))
+        return digest.finalize().hex()
 
 class LogicalBlock:
     """holds block data and metadata for processor node"""
