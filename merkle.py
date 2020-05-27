@@ -40,3 +40,18 @@ class MerkleTree:
         if i < self.size / 2:
             return self.left.get_transaction(i)
         return self.right.get_transaction(i - self.size / 2)
+
+    def get_hash_path(self, i):
+        ans = []
+        if i < 0 or i >= self.size:
+            return ans
+        if(self.size == 1):
+            return ans
+        if (i < self.size / 2):
+            ans = self.left.get_hash_path(i)
+            ans.append(self.right.digest)
+        else:
+            ans = self.right.get_hash_path(i - self.size / 2)
+            ans.append(self.left.digest)
+
+        return ans    

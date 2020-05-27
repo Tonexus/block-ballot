@@ -1,0 +1,13 @@
+{
+	"issuer_config": {},
+	"processor_config": {
+		"initblockchain" : "None", 
+		"node_addresses": ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"],
+		"voters_map" : {}, 
+		"config": {
+			"issuer_address": "https://localhost:12345/ISSUER"
+		}
+	},
+	"nodes": ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
+
+}
