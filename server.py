@@ -11,7 +11,7 @@ class RequestHandlerIssuer(SimpleXMLRPCRequestHandler):
 def serve_issuer(config, port):
 	""" Makes a rpc server for issuers"""
 	with SimpleXMLRPCServer(('localhost', port),
-	                        requestHandler=RequestHandlerIssuer) as server:
+	                        requestHandler=RequestHandlerIssuer, allow_none=True) as server:
 	    server.register_introspection_functions()
 	    server.register_instance(Issuer(config))
 	    server.serve_forever()
@@ -24,7 +24,7 @@ class RequestHandlerProcessor(SimpleXMLRPCRequestHandler):
 def serve_processor(config, port):
 	""" Makes a rpc server for issuers"""
 	with SimpleXMLRPCServer(('localhost', port),
-	                        requestHandler=RequestHandlerProcessor) as server:
+	                        requestHandler=RequestHandlerProcessor, allow_none=True) as server:
 	    server.register_introspection_functions()
 	    server.register_instance(ProcessNode(**config))
 	    server.serve_forever()

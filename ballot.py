@@ -1,9 +1,17 @@
 import xmlrpc.client
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from random import sample 
+import time
+from transaction import LogicalTransaction
 
-
+TIMEOUT = 1
+MAX_TRIES = 10
 
 class Wallet:
 	""" Wallet class interacts with a blockchain node to write and read data
@@ -44,7 +52,6 @@ class Wallet:
 		self.public = self.private.public_key()
 		self.node_addresses = node_addresses
 		self.nodes = []
-		self.source_transaction = None
 		for node_address in node_addresses:
 			self.nodes.append(xmlrpc.client.ServerProxy(node_address))
 
@@ -64,21 +71,33 @@ class Wallet:
 		public_key : public_key
 			The public key the user wants to send 1 coin to
 		"""
+		# Need to set the source transaction first
 		# Need to pick some nodes to send the transaction to
 		nodes = self.pick_nodes()
+		print("Inside make transaction")
 		# Make the transaction from self to the other public address
 		# store source transaction info inside the wallet
 		# for the Issuer is special issuer transaction
 		# For the regular voter is the results of registering to vote
-		# if self.source_transaction_id == None:
-		# 	raise ValueError
-		# if self.source_transaction_data == None:
-		# 	raise ValueError
-		transaction = transaction.LogicalTransaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
-		for node in nodes:
-			if node.add_transaction(transaction) == False:
-				return False
-		return True
+		for tries in range(MAX_TRIES):
+			transaction = LogicalTransaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
+			for node in nodes:
+				if node.add_transaction(transaction, 0) == False:
+					return False
+			time.sleep(TIMEOUT)
+			longest_bc = []
+			for node in nodes:
+				bc = node.get_blockchain()
+				if len(bc) > len(longest_bc):
+					longest_bc = bc
+			# find new transaction in the blockchain
+			for block in reversed(longest_bc):
+				# loop through transactions in the block?
+				for transaction in block.transactions:
+					if transaction.dst_pub_key == public_key: # check src_transaction.public_key?
+						return transaction.id, transaction.source_transaction_data
+			# now repeat above steps
+		return None, None
 
 
 
@@ -91,6 +110,8 @@ class Wallet:
 		punlic_key : public_key
 			The address to check the balance of
 		"""
+		# traverse all the transactions
+
 
 class Ballot(Wallet):
 	
@@ -107,12 +128,23 @@ class Ballot(Wallet):
 		super().__init__(config['node_addresses'])
 		self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
 		self.issuer_address = config['issuer_address']
+		self.registered = False
+		self.source_transaction_id = -1
+		self.source_transaction_data = ""
 
 	def register(self):
 		""" Register to vote by sending rpc call to Issuer
 		Returns the RPC call's return value
 		"""
-		return self.issuer.register(self.public)
+		public_key_hex = self.public.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).hex()
+		self.source_transaction_id, self.source_transaction_data = self.issuer.register(public_key_hex)
+		if self.source_transaction_id == None or self.source_transaction_data == None:
+			return False
+		self.registered = True
+		return True
 
 	def vote(self, public_key):
 		""" Vote for the person in the public addr 
@@ -123,7 +155,15 @@ class Ballot(Wallet):
 			The public key of the person the user wants to vote for
 
 		"""
-		return self.make_transaction(public_key)
+		if self.registered:
+			s_id, s_data = self.make_transaction(public_key)
+			if s_id == None or s_data == None:
+				return False
+			else:
+				self.source_transaction_id = s_id
+				self.source_transaction_data = s_data
+				return True
+		return False
 
 	def tally(self, public_keys):
 		""" Tally the votes for the public addresses in public key"""
@@ -162,18 +202,29 @@ class Issuer(Wallet):
 		super().__init__(config['node_addresses'])
 		self.voters = []
 		self.pow_config = config['pow_config']
+		self.source_transaction_id = (0, 0)
+		self.source_transaction_data = None
 
 	def start_election(self):
 		""" Starts the election on all the nodes with the given POW config"""
 		# Maybe in here we need to start up the nodes just on our local machine
 		# Actually from here we should just publish the genesis block to all the nodes which signals to start accepting transactions
-		self.genesis = block.Genesis()
+		public_key_hex = self.public.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        ).hex()
 		for node in self.nodes:
-			node.set_genesis(self.genesis)
+			node.set_genesis(public_key_hex)
 
 
 	def register(self, public_key):
-		""" Gives the public key a coin on the chain"""
+		""" Gives the public key a coin on the chain
+		Public key comes in as hex form
+		"""
+		print("Inside here, ", public_key)
+		pk_bytes = bytes.fromhex(public_key)
+		public_key = load_pem_public_key(pk_bytes, backend=default_backend())
+		print(public_key)
 		self.voters.append(public_key)
 		return self.make_transaction(public_key)
 

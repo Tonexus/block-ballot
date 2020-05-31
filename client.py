@@ -1,14 +1,20 @@
 import xmlrpc.client
 from ballot import Ballot
 
+
+
 config = {}
 config['issuer_address'] = 'http://localhost:12345/ISSUER'
-config['node_addresses'] = []
-b = Ballot(config)
-b.public = "my public address"
-print(b.register())
+config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
 
 
 i = xmlrpc.client.ServerProxy(config['issuer_address'])
 
-print(i.list_registered_voters())
+print(i.start_election())
+
+b = Ballot(config)
+print(b.register())
+
+
+
+

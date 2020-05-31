@@ -13,7 +13,7 @@ else:
 
 
 config = {}
-config['node_addresses'] = []
+config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
 config['pow_config'] = 'pow config'
 serve_issuer(config, int(args.port))
 

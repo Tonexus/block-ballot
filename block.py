@@ -28,6 +28,10 @@ class GenesisBlock:
         ).hex()
         # metadata as ascii string
         self.metadata = metadata
+        self.prev_hash = ""
+        self.nonce = ""
+        self.root_hash = ""
+
 
     def to_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
@@ -43,6 +47,12 @@ class LogicalBlock:
         # position in block chain
         self.block_id = block_id
         # merkle tree of transactions attached to block
+        if block_id == 0:
+            self.tree = None
+            self.block = None
+            self.transactions = None
+            return
+
         self.tree = merkle.MerkleTree(transactions)
 
         self.block = self.build_block_data(nonce)

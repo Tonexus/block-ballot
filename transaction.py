@@ -65,4 +65,4 @@ class LogicalTransaction:
         pass
 
     def get_dst(self):
-        pass
+        return self.transact_data.dst_pub_key

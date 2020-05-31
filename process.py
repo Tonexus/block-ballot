@@ -1,12 +1,19 @@
 
-from block import Block,LogicalBlock
+from block import Block,LogicalBlock,GenesisBlock
 from ballot import Issuer
 from merkle import MerkleTree
+from transaction import LogicalTransaction
+
 import xmlrpc.client
 import threading
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 class ProcessNode(object):
 
@@ -45,6 +52,29 @@ class ProcessNode(object):
         if(self.voters_map[id]==None):
             self.voters_map[id] = self.issuer.get_pkey(id)
         return self.voters_map[id]
+
+    def set_genesis(self, public_key):
+        print("Set genesis called")
+        pk_bytes = bytes.fromhex(public_key)
+        public_key = load_pem_public_key(pk_bytes, backend=default_backend())
+        self.genesis_block = GenesisBlock(public_key, "")
+        logical_block = LogicalBlock("", 0, None, None)
+        logical_block.block = self.genesis_block
+        self.blockchain = [logical_block]
+        self.blockheaders = []
+
+        #wallet records on blockchain
+        self.coins_from_issuer={}
+        self.coins_from_voter={}
+        #wallet records plus pending_transactions
+        self.cur_coins_from_issuer={}
+        self.cur_coins_from_voter={}
+
+        #self.s_coins_map={}
+
+        self.pending_transactions=[]
+
+        self.interrupt_mining = 1
 
     #replace bc1 with bc2
     #1.check length of blockchains
@@ -137,16 +167,20 @@ class ProcessNode(object):
     #2.check signature
     #3.check with the wallet records
     def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter):
-        src = transaction.get_src()
+        (block_id, transaction_id) = transaction.src_transact_id
+        if block_id == 0:
+            src = blockchain[0].issr_pub_key
+        else:
+            src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
         dst = transaction.get_dst()
-        src_pkey = self.get_pkey(src)
-        if(src_pkey==None):
-            return False
-        if(not transaction.Verify(src_pkey)):
+        # src_pkey = self.get_pkey(src)
+        # if(src_pkey==None):
+        #     return False
+        if(not transaction.Verify(src)):
             return False
 
-        if(self.get_pkey(dst)==None):
-                return False
+        # if(self.get_pkey(dst)==None):
+        #         return False
 
         if(src!=self.issuer_id):
             if(coins_from_issuer[src]==0):
@@ -162,6 +196,7 @@ class ProcessNode(object):
     def add_transaction(self, transaction, id):
         #lock here
         self.lock.acquire()
+        print(transaction)
         if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
             self.pending_transactions.append(transaction)
             self.interrupt_mining=1
