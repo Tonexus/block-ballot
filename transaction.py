@@ -5,11 +5,9 @@ from cryptography.exceptions import InvalidSignature
 
 class Transaction:
     """data corresponding to a single transaction"""
-    def __init__(self, dst_pub_key, src_transact_data, src_prv_key, d=None):
-        # stored as ASCII PEM data in bytes
-        if d is not None:
-            self.__dict__ = d
-            return
+    def __init__(self, src_transact_id, dst_pub_key, src_transact_data, src_prv_key):
+        self.src_transact_id = src_transact_id
+        # stored as PEM data in hex
         self.dst_pub_key = dst_pub_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -52,41 +50,3 @@ class Transaction:
             return True
         except InvalidSignature:
             return False
-
-class LogicalTransaction:
-    """transaction data and metadata to pass to processor node via RPC"""
-    def __init__(self, src_transact_id, dst_pub_key, src_transact_data, src_prv_key, d=None):
-        # tuple of source block id and transaction id within the block
-        if d is not None:
-            self.__dict__ = d
-            print(d['transact_data'])
-            self.transact_data = Transaction(None, None, None, d['transact_data'])
-            return
-        self.src_transact_id = src_transact_id
-        self.transact_data = Transaction(dst_pub_key, src_transact_data, src_prv_key)
-
-
-    def verify(self, src_pub_key):
-        """verifies that the signature matches the transaction, returns true if valid"""
-        print("Inside verify inside LogicalTransaction")
-        return self.transact_data.verify(src_pub_key)
-
-    def get_src(self):
-        pass
-
-    def get_dst(self):
-        return self.transact_data.dst_pub_key
-
-
-
-
-
-
-
-
-
-
-
-
-
-

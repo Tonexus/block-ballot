@@ -55,11 +55,9 @@ class LogicalBlock:
             self.transactions = None
             return
 
-        d_transac = map(lambda x: x.transact_data, L_transactions)
-        self.tree = merkle.MerkleTree(D_transactions)
+        self.tree = merkle.MerkleTree(transactions)
 
         self.block = self.build_block_data(nonce)
-        self.transactions = L_transactions
 
     def build_block_data(self, nonce):
         """builds a block from the previously stored data and input nonce (in hex)"""
