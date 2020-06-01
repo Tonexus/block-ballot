@@ -60,7 +60,7 @@ class Wallet:
 		Right not picking random subset of the nodes"""
 		if self.nodes == []:
 			return []
-		return sample(self.nodes,3)
+		return sample(self.nodes,1)
 
 
 	def make_transaction(self, public_key):
@@ -82,8 +82,11 @@ class Wallet:
 		for tries in range(MAX_TRIES):
 			transaction = LogicalTransaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
 			for node in nodes:
-				if node.add_transaction(transaction, 0) == False:
+				ret = node.add_transaction(transaction, 0)
+				print(ret)
+				if ret == False:
 					return False
+			print("Got to the timeout")
 			time.sleep(TIMEOUT)
 			longest_bc = []
 			for node in nodes:
@@ -91,8 +94,11 @@ class Wallet:
 				if len(bc) > len(longest_bc):
 					longest_bc = bc
 			# find new transaction in the blockchain
-			for block in reversed(longest_bc):
+			print(len(longest_bc))
+			for block in reversed(longest_bc[1:-1]):
 				# loop through transactions in the block?
+				print(block)
+				block = LogicalBlock(None, None, None, None, block)
 				for transaction in block.transactions:
 					if transaction.dst_pub_key == public_key: # check src_transaction.public_key?
 						return transaction.id, transaction.source_transaction_data
@@ -140,7 +146,7 @@ class Ballot(Wallet):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).hex()
-		self.source_transaction_id, self.source_transaction_data = self.issuer.register(public_key_hex)
+		(self.source_transaction_id, self.source_transaction_data) = self.issuer.register(public_key_hex)
 		if self.source_transaction_id == None or self.source_transaction_data == None:
 			return False
 		self.registered = True

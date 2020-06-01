@@ -15,6 +15,11 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
+TRANSACTIONS_PER_BLOCK = 1
+def hex2(n):
+    x = '%x' % (n,)
+    return ('0' * (len(x) % 2)) + x
+
 class ProcessNode(object):
 
     def __init__(self, initblockchain, node_addresses, node_id, issuer_id, voters_map, config):
@@ -22,8 +27,9 @@ class ProcessNode(object):
         self.blockheaders = []
         self.node_addresses = node_addresses
         self.nodes = []
-        for node_address in node_addresses:
-            self.nodes.append(xmlrpc.client.ServerProxy(node_address))
+        for i in range(len(node_addresses)):
+            if i != node_id:
+                self.nodes.append(xmlrpc.client.ServerProxy(node_addresses[i]))
 
         #wallet records on blockchain
         self.coins_from_issuer={}
@@ -75,6 +81,8 @@ class ProcessNode(object):
         self.pending_transactions=[]
 
         self.interrupt_mining = 1
+        self.issuer_id = public_key
+
 
     #replace bc1 with bc2
     #1.check length of blockchains
@@ -138,7 +146,8 @@ class ProcessNode(object):
 
     #similar to verify blockchain
     #if succeeds, update state data
-    def verify_block(self, newblock):    
+    def verify_block(self, newblock):
+        print("Verify block called")    
         if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
             return False
 
@@ -147,8 +156,11 @@ class ProcessNode(object):
         
         #check transactions
         for transaction in newblock.transactions:
+            print("About to call verify transactions")
             if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
+                print("Inside if")
                 return False
+            print("Outside if")
         #check block.roothash
         tmp_MerkleTree = MerkleTree(newblock.transactions)
         if(tmp_MerkleTree.get_hash!=newblock.block.root_hash):
@@ -166,29 +178,43 @@ class ProcessNode(object):
     #1.check the validation of sender and receiver
     #2.check signature
     #3.check with the wallet records
+    # Logical Transaction
     def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter):
         (block_id, transaction_id) = transaction.src_transact_id
         if block_id == 0:
-            src = blockchain[0].issr_pub_key
+            src_str = self.genesis_block.issr_pub_key
+            pk_bytes = bytes.fromhex(src_str)
+            src = load_pem_public_key(pk_bytes, backend=default_backend())
         else:
             src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+            # src_str = 
         dst = transaction.get_dst()
         # src_pkey = self.get_pkey(src)
         # if(src_pkey==None):
         #     return False
-        if(not transaction.Verify(src)):
+        print("before verify", type(transaction.transact_data))
+        if(not transaction.verify(src)):
             return False
-
+        print("After verify")
         # if(self.get_pkey(dst)==None):
         #         return False
 
-        if(src!=self.issuer_id):
+        if(src_str != self.genesis_block.issr_pub_key):
+            print("inside if")
+            if src not in coins_from_issuer:
+                coins_from_issuer[src] = 0
+            if dst not in coins_from_voter:
+                coins_from_voter[dst] = 0
             if(coins_from_issuer[src]==0):
                 return False
             coins_from_issuer[src]-=1
             coins_from_voter[dst]+=1
         else:
-            coins_from_issuer[dst]+=1
+            print("Inside else")
+            if dst not in coins_from_issuer:
+                coins_from_issuer[dst] = 1
+            else:
+                coins_from_issuer[dst]+=1
 
         return True
 
@@ -197,10 +223,16 @@ class ProcessNode(object):
         #lock here
         self.lock.acquire()
         print(transaction)
+        transaction = LogicalTransaction(None, None, None, None, d=transaction)
+        print(type(transaction))
         if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
-            self.pending_transactions.append(transaction)
+            print("Inside if on add_transaction")
+            self.pending_transactions.append(transaction.transact_data)
             self.interrupt_mining=1
-            self.lock.release()
+            if len(self.pending_transactions) == TRANSACTIONS_PER_BLOCK:
+                # Call mining
+                self.lock.release()
+                self.mining()
             return True
         else:
             self.lock.release()
@@ -417,21 +449,30 @@ class ProcessNode(object):
     
     def mining(self):
         nonce = 0
-        pre_hash = 0
+        pre_hash = self.blockchain[-1].block.to_hash()
+        print("About to make block in mining")
         
-        newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, nonce)
+        newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, hex2(nonce))
+        print("Made block in mining")
         while(True):
             if(self.interrupt_mining==1):
                 nonce=0
+                print("About to call to_hash")
                 pre_hash = self.blockchain[len(self.blockchain)-1].block.to_hash()
-                newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, nonce)
+                print("About to call new block", pre_hash)
+
+                newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, hex2(nonce))
                 self.interrupt_mining = 0
 
             #newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, nonce)
-            newblock.block = newblock.build_block_data(nonce)
+            print("About to call build_block")
+            newblock.block = newblock.build_block_data(hex2(nonce))
             if(self.check_hash(newblock.block.to_hash())):
+                print("Inisde the if statement", self.nodes, newblock.__dict__)
                 self.add_block(newblock,-1)
+                print("About to call rpc add block")
                 self.RPC_add_block(newblock)
+                print("After RPC add block")
                 self.interrupt_mining = 1
                 break 
 

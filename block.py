@@ -14,10 +14,12 @@ class Block:
         self.root_hash = root_hash
 
     def to_hash(self):
+        print("Inside to_hash", self.prev_hash, self.nonce, self.root_hash)
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.prev_hash))
         digest.update(bytes.fromhex(self.nonce))
         digest.update(bytes.fromhex(self.root_hash))
+        print("About to return")
         return digest.finalize().hex()
 
 class GenesisBlock:
@@ -53,10 +55,11 @@ class LogicalBlock:
             self.transactions = None
             return
 
-        self.tree = merkle.MerkleTree(transactions)
+        d_transac = map(lambda x: x.transact_data, L_transactions)
+        self.tree = merkle.MerkleTree(D_transactions)
 
         self.block = self.build_block_data(nonce)
-        self.transcations = transactions
+        self.transactions = L_transactions
 
     def build_block_data(self, nonce):
         """builds a block from the previously stored data and input nonce (in hex)"""

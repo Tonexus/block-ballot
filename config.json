@@ -7,7 +7,7 @@
 			"issuer_address": "https://localhost:12345/ISSUER"
 		}
 	},
-	"nodes": ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"],
-	"node_ports": [30001, 30002, 30003]
+	"nodes": ["http://localhost:30001/PROCESSOR"],
+	"node_ports": [30001]
 
 }
