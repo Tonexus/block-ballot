@@ -1,4 +1,3 @@
-
 from block import Block,LogicalBlock,GenesisBlock
 from ballot import Issuer
 from merkle import MerkleTree
@@ -6,6 +5,7 @@ from transaction import LogicalTransaction
 
 import xmlrpc.client
 import threading
+import pickle
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -188,11 +188,11 @@ class ProcessNode(object):
         else:
             src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
             # src_str = 
-        dst = transaction.get_dst()
+        dst = transaction.dst_pub_key
         # src_pkey = self.get_pkey(src)
         # if(src_pkey==None):
         #     return False
-        print("before verify", type(transaction.transact_data))
+        print("before verify", type(transaction))
         if(not transaction.verify(src)):
             return False
         print("After verify")
@@ -223,11 +223,11 @@ class ProcessNode(object):
         #lock here
         self.lock.acquire()
         print(transaction)
-        transaction = LogicalTransaction(None, None, None, None, d=transaction)
+        transaction = pickle.loads(transaction)
         print(type(transaction))
         if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
             print("Inside if on add_transaction")
-            self.pending_transactions.append(transaction.transact_data)
+            self.pending_transactions.append(transaction)
             self.interrupt_mining=1
             if len(self.pending_transactions) == TRANSACTIONS_PER_BLOCK:
                 # Call mining

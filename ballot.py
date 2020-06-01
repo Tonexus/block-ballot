@@ -1,4 +1,6 @@
 import xmlrpc.client
+import pickle
+
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 
@@ -8,7 +10,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from random import sample 
 import time
-from transaction import LogicalTransaction
+from transaction import Transaction
 
 TIMEOUT = 1
 MAX_TRIES = 10
@@ -80,9 +82,9 @@ class Wallet:
 		# for the Issuer is special issuer transaction
 		# For the regular voter is the results of registering to vote
 		for tries in range(MAX_TRIES):
-			transaction = LogicalTransaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
+			transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
 			for node in nodes:
-				ret = node.add_transaction(transaction, 0)
+				ret = node.add_transaction(pickle.dumps(transaction), 0)
 				print(ret)
 				if ret == False:
 					return False
