@@ -1,7 +1,7 @@
 from block import Block,LogicalBlock,GenesisBlock
 from ballot import Issuer
 from merkle import MerkleTree
-from transaction import LogicalTransaction
+from transaction import Transaction
 
 import xmlrpc.client
 import threading
@@ -151,26 +151,28 @@ class ProcessNode(object):
         if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
             return False
 
-        coins_from_issuer=self.coins_from_issuer.copy()
-        coins_from_voter=self.coins_from_voter.copy()
+        coins_from_issuer=self.cur_coins_from_issuer.copy()
+        coins_from_voter=self.cur_coins_from_voter.copy()
         
         #check transactions
+        print("About to forloop inside verify_block")
         for transaction in newblock.transactions:
             print("About to call verify transactions")
             if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
-                print("Inside if")
+                print("Inside if about to return false")
                 return False
             print("Outside if")
         #check block.roothash
         tmp_MerkleTree = MerkleTree(newblock.transactions)
-        if(tmp_MerkleTree.get_hash!=newblock.block.root_hash):
+        if(tmp_MerkleTree.get_hash()!=newblock.block.root_hash):
+            print("About to return false after the merkel tree")
             return False
 
-        self.coins_from_issuer = coins_from_issuer
-        self.coins_from_voter = coins_from_voter
+        # self.coins_from_issuer = coins_from_issuer
+        # self.coins_from_voter = coins_from_voter
 
-        self.cur_coins_from_issuer = coins_from_issuer
-        self.cur_coins_from_voter = coins_from_voter
+        # self.cur_coins_from_issuer = coins_from_issuer
+        # self.cur_coins_from_voter = coins_from_voter
         self.pending_transactions=[]
 
         return True       
@@ -200,31 +202,71 @@ class ProcessNode(object):
         #         return False
 
         if(src_str != self.genesis_block.issr_pub_key):
-            print("inside if")
-            if src not in coins_from_issuer:
-                coins_from_issuer[src] = 0
-            if dst not in coins_from_voter:
-                coins_from_voter[dst] = 0
+            print("VERIFY_TRANSACTIN: inside if")
+            # if src not in coins_from_issuer:
+            #     coins_from_issuer[src] = 0
+            # if dst not in coins_from_voter:
+            #     coins_from_voter[dst] = 0
             if(coins_from_issuer[src]==0):
                 return False
-            coins_from_issuer[src]-=1
-            coins_from_voter[dst]+=1
+            # coins_from_issuer[src]-=1
+            # coins_from_voter[dst]+=1
         else:
-            print("Inside else")
+            print("Inside else, coin from Issuer", dst)
+            print("DST is: ", dst)
+            print("The Keys: ", coins_from_issuer.keys())
             if dst not in coins_from_issuer:
-                coins_from_issuer[dst] = 1
+                return True
             else:
-                coins_from_issuer[dst]+=1
+                return False
+            for block in self.blockchain[1:]:
+                print("Inside for loop inside block , verify_transaction", block.transactions)
+                for transactionbc in block.transactions:
+                    if transactionbc.src_transact_id[0] == 0:
+                        if transactionbc.dst_pub_key == transaction.dst_pub_key:
+                            # We have a problem
+                            return False
+                            # otherwise fine
+
+
 
         return True
+
+    def update_metadata(self, new_block):
+        for transaction in new_block.transactions:
+            (block_id, transaction_id) = transaction.src_transact_id
+            if block_id == 0:
+                src_str = self.genesis_block.issr_pub_key
+                pk_bytes = bytes.fromhex(src_str)
+                src = load_pem_public_key(pk_bytes, backend=default_backend())
+            else:
+                src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+            dst = transaction.dst_pub_key
+
+            if(src_str != self.genesis_block.issr_pub_key):
+                if src not in self.coins_from_issuer:
+                    self.cur_coins_from_issuer[src] = 0
+                if dst not in self.coins_from_voter:
+                    self.cur_coins_from_voter[dst] = 0
+                if self.cur_coins_from_issuer[src]==0 :
+                    return False
+                self.cur_coins_from_issuer[src]-=1
+                self.cur_coins_from_voter[dst]+=1
+            else:
+                print("METADATA: Else")
+                self.cur_coins_from_issuer[dst] = 1
+        return True
+
 
     #can call by other process nodes or just this node 
     def add_transaction(self, transaction, id):
         #lock here
         self.lock.acquire()
         print(transaction)
-        transaction = pickle.loads(transaction)
-        print(type(transaction))
+        print("Type of transaction: ",type(transaction))
+
+        transaction = pickle.loads(transaction.data)
+        print("After pickle.load")
         if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
             print("Inside if on add_transaction")
             self.pending_transactions.append(transaction)
@@ -235,6 +277,7 @@ class ProcessNode(object):
                 self.mining()
             return True
         else:
+            print("Inside else, inside add_transaction, about to return false")
             self.lock.release()
             return False
         
@@ -255,7 +298,10 @@ class ProcessNode(object):
             t1.start()
             return False
         else:
+            print("The block is verified")
             self.blockchain.append(newblock)
+            # update the metadata
+            self.update_metadata(newblock)
             self.lock.release()
             return True
 
@@ -265,7 +311,7 @@ class ProcessNode(object):
             t1.start()
 
     def get_blockchain(self):
-        return self.blockchain
+        return pickle.dumps(self.blockchain)
 
     #get the len of blockchain and current block hash
     def get_len_hash(self):

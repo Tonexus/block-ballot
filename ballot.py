@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from random import sample 
 import time
 from transaction import Transaction
+from block import LogicalBlock
 
 TIMEOUT = 1
 MAX_TRIES = 10
@@ -76,34 +77,43 @@ class Wallet:
 		# Need to set the source transaction first
 		# Need to pick some nodes to send the transaction to
 		nodes = self.pick_nodes()
-		print("Inside make transaction")
+		print("Inside make transaction", public_key)
 		# Make the transaction from self to the other public address
 		# store source transaction info inside the wallet
 		# for the Issuer is special issuer transaction
 		# For the regular voter is the results of registering to vote
 		for tries in range(MAX_TRIES):
 			transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
+			print("After make transaction")
+			test = pickle.dumps(transaction)
+
 			for node in nodes:
 				ret = node.add_transaction(pickle.dumps(transaction), 0)
 				print(ret)
 				if ret == False:
-					return False
+					return None, None
 			print("Got to the timeout")
 			time.sleep(TIMEOUT)
 			longest_bc = []
 			for node in nodes:
 				bc = node.get_blockchain()
+				bc = pickle.loads(bc.data)
 				if len(bc) > len(longest_bc):
 					longest_bc = bc
 			# find new transaction in the blockchain
 			print(len(longest_bc))
-			for block in reversed(longest_bc[1:-1]):
+			# print(len(longest_bc))
+			i = len(longest_bc) - 1
+			for block in reversed(longest_bc[1:]):
+
 				# loop through transactions in the block?
-				print(block)
-				block = LogicalBlock(None, None, None, None, block)
-				for transaction in block.transactions:
-					if transaction.dst_pub_key == public_key: # check src_transaction.public_key?
-						return transaction.id, transaction.source_transaction_data
+				print("Inside the for loop inside make_transaction: ", block)
+				j = 0
+				for transaction_bc in block.transactions:
+					if transaction.to_hash() == transaction_bc.to_hash(): # check src_transaction.public_key?
+						return (i, j), transaction_bc
+					j+=1
+				i-=1
 			# now repeat above steps
 		return None, None
 
