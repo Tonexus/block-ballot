@@ -188,8 +188,10 @@ class ProcessNode(object):
             pk_bytes = bytes.fromhex(src_str)
             src = load_pem_public_key(pk_bytes, backend=default_backend())
         else:
-            src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
-            # src_str = 
+            src_str = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+            pk_bytes = bytes.fromhex(src_str)
+            src = load_pem_public_key(pk_bytes, backend=default_backend())
+
         dst = transaction.dst_pub_key
         # src_pkey = self.get_pkey(src)
         # if(src_pkey==None):
@@ -207,7 +209,7 @@ class ProcessNode(object):
             #     coins_from_issuer[src] = 0
             # if dst not in coins_from_voter:
             #     coins_from_voter[dst] = 0
-            if(coins_from_issuer[src]==0):
+            if coins_from_issuer[src_str] == 0 :
                 return False
             # coins_from_issuer[src]-=1
             # coins_from_voter[dst]+=1
@@ -240,7 +242,9 @@ class ProcessNode(object):
                 pk_bytes = bytes.fromhex(src_str)
                 src = load_pem_public_key(pk_bytes, backend=default_backend())
             else:
-                src = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+                src_str = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+                pk_bytes = bytes.fromhex(src_str)
+                src = load_pem_public_key(pk_bytes, backend=default_backend())
             dst = transaction.dst_pub_key
 
             if(src_str != self.genesis_block.issr_pub_key):
