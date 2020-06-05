@@ -14,7 +14,7 @@ from transaction import Transaction
 from block import LogicalBlock
 
 TIMEOUT = 1
-MAX_TRIES = 10
+MAX_TRIES = 1
 
 class Wallet:
 	""" Wallet class interacts with a blockchain node to write and read data
@@ -55,6 +55,7 @@ class Wallet:
 		self.public = self.private.public_key()
 		self.node_addresses = node_addresses
 		self.nodes = []
+		self.transaction_hash = None
 		for node_address in node_addresses:
 			self.nodes.append(xmlrpc.client.ServerProxy(node_address))
 
@@ -77,21 +78,51 @@ class Wallet:
 		# Need to set the source transaction first
 		# Need to pick some nodes to send the transaction to
 		nodes = self.pick_nodes()
-		# print("Inside make transaction", public_key)
+		print("Inside make transaction", public_key)
 		# Make the transaction from self to the other public address
 		# store source transaction info inside the wallet
 		# for the Issuer is special issuer transaction
 		# For the regular voter is the results of registering to vote
-		for tries in range(MAX_TRIES):
-			transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
-			# print("After make transaction")
-			test = pickle.dumps(transaction)
-
+		if self.source_transaction_id is None and self.transaction_hash is not None:
+			# Find my source transaction id
+			print('My source transaction id was none')
+			longest_bc = []
 			for node in nodes:
-				ret = node.add_transaction(pickle.dumps(transaction), 0)
+				bc = node.get_blockchain()
+				bc = pickle.loads(bc.data)
+				if len(bc) > len(longest_bc):
+					longest_bc = bc
+			# find new transaction in the blockchain
+			print(len(longest_bc))
+			i = len(longest_bc) - 1
+			for block in reversed(longest_bc[1:]):
+
+				# loop through transactions in the block?
+				print("Inside the for loop inside make_transaction: ", block)
+				j = 0
+				for transaction_bc in block.transactions:
+					if self.transaction_hash == transaction_bc.to_hash(): # check src_transaction.public_key?
+						self.source_transaction_id = (i, j)
+						self.source_transaction_data = transaction_bc
+						break
+					j+=1
+				if self.source_transaction_id is not None:
+					break
+				i-=1
+		print(self.source_transaction_id, self.transaction_hash)
+		transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
+		self.transaction_hash = transaction.to_hash()
+		for tries in range(MAX_TRIES):
+			print("After make transaction")
+			test = pickle.dumps(transaction)
+			print("After pickling")
+			for node in nodes:
+				print("About to call add transaction")
+				ret = node.add_transaction(pickle.dumps(transaction), tries)
+				print("Added to the node")
 				if ret == False:
-					return None, None
-			# print("Got to the timeout")
+					return None, None, self.transaction_hash
+			print("Got to the timeout")
 			time.sleep(TIMEOUT)
 			longest_bc = []
 			for node in nodes:
@@ -100,20 +131,20 @@ class Wallet:
 				if len(bc) > len(longest_bc):
 					longest_bc = bc
 			# find new transaction in the blockchain
-			# print(len(longest_bc))
+			print(len(longest_bc))
 			i = len(longest_bc) - 1
 			for block in reversed(longest_bc[1:]):
 
 				# loop through transactions in the block?
-				# print("Inside the for loop inside make_transaction: ", block)
+				print("Inside the for loop inside make_transaction: ", block)
 				j = 0
 				for transaction_bc in block.transactions:
 					if transaction.to_hash() == transaction_bc.to_hash(): # check src_transaction.public_key?
-						return (i, j), transaction_bc
+						return (i, j), transaction_bc, self.transaction_hash
 					j+=1
 				i-=1
 			# now repeat above steps
-		return None, None
+		return None, None, self.transaction_hash
 
 
 
@@ -178,16 +209,17 @@ class Ballot(Wallet):
 		""" Register to vote by sending rpc call to Issuer
 		Returns the RPC call's return value
 		"""
+		self.registered = True
+		print("Calling register")
 		public_key_hex = self.public.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).hex()
-		(self.source_transaction_id, self.source_transaction_data) = pickle.loads(self.issuer.register(public_key_hex).data)
+		(self.source_transaction_id, self.source_transaction_data, self.transaction_hash) = pickle.loads(self.issuer.register(public_key_hex).data)
 		if self.source_transaction_id == None or self.source_transaction_data == None:
 			return False
 		# pk_bytes = bytes.fromhex(self.source_transaction_data.dst_pub_key)
 		# self.source_transaction_data.dst_pub_key = load_pem_public_key(pk_bytes, backend=default_backend())
-		self.registered = True
 		return True
 
 	def vote(self, public_key):
@@ -200,7 +232,7 @@ class Ballot(Wallet):
 
 		"""
 		if self.registered:
-			s_id, s_data = self.make_transaction(public_key)
+			s_id, s_data, self.transaction_hash = self.make_transaction(public_key)
 			if s_id == None or s_data == None:
 				return False
 			else:
@@ -254,15 +286,16 @@ class Issuer(Wallet):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).hex()
+		num_zeros = 2
 		for node in self.nodes:
-			node.set_genesis(public_key_hex)
+			node.set_genesis(public_key_hex, num_zeros)
 
 
 	def register(self, public_key):
 		""" Gives the public key a coin on the chain
 		Public key comes in as hex form
 		"""
-		# print("Inside here, ", public_key)
+		print("Inside here, ", public_key)
 		pk_bytes = bytes.fromhex(public_key)
 		public_key = load_pem_public_key(pk_bytes, backend=default_backend())
 		# print(public_key)
@@ -293,7 +326,7 @@ class Issuer(Wallet):
 			if len(bc) > len(longest_bc):
 				longest_bc = bc
 		balances = {public_key: {'transaction_ids': [], 'balance': 0}}
-		transactions_to_keys = [[public_key],[]]
+		transactions_to_keys = [[public_key, public_key],[]]
 		b_id = 1
 		for block in longest_bc[1:]:
 			t_id = 0
@@ -312,6 +345,8 @@ class Issuer(Wallet):
 			for transaction in block.transactions:
 				(b, t) = transaction.src_transact_id
 				balances[transactions_to_keys[b][t]]['balance'] -= 1
+				# if (b, t) == (0, 0):
+					# balances[transaction.dst_pub_key]['balance'] -= 1
 				t_id += 1
 			b_id += 1
 		return balances

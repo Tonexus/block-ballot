@@ -23,7 +23,7 @@ class Block:
         return digest.finalize().hex()
 
 class GenesisBlock:
-    def __init__(self, issr_pub_key, metadata):
+    def __init__(self, issr_pub_key, metadata, num_zeros):
         self.issr_pub_key = issr_pub_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -33,6 +33,7 @@ class GenesisBlock:
         self.prev_hash = ""
         self.nonce = ""
         self.root_hash = ""
+        self.num_zeros = num_zeros
 
 
     def to_hash(self):
@@ -54,9 +55,9 @@ class LogicalBlock:
             self.block = None
             self.transactions = None
             return
-
+        print("About to make merkle tree")
         self.tree = merkle.MerkleTree(transactions)
-
+        print("Done making merkle tree")
         self.block = self.build_block_data(nonce)
         self.transactions = transactions
 

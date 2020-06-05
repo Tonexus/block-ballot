@@ -20,8 +20,13 @@ class MerkleTree:
             # otherwise, split transactions in half and form subtrees
             # hash is combined from left and right
             self.transact_data = None
-            self.left = MerkleTree(transacts[:self.size/2])
-            self.right = MerkleTree(transacts[self.size/2:])
+            print("before self.left", self.size)
+
+            self.left = MerkleTree(transacts[:self.size//2])
+            print("After self.left")
+
+            self.right = MerkleTree(transacts[self.size//2:])
+            print("After self.right")
             digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
             digest.update(bytes.fromhex(self.left.digest))
             digest.update(bytes.fromhex(self.right.digest))
@@ -33,13 +38,14 @@ class MerkleTree:
 
     def get_transaction(self, i):
         """get a transaction base don its index in the original ist of transactions"""
+        print('Inside get_transaction: ', self.size)
         if i < 0 or i >= self.size:
             raise IndexError("Not in range of values")
         if self.size == 1:
             return self.transact_data
-        if i < self.size / 2:
+        if i < self.size // 2:
             return self.left.get_transaction(i)
-        return self.right.get_transaction(i - self.size / 2)
+        return self.right.get_transaction(i - self.size // 2)
 
     def get_hash_path(self, i):
         ans = []
@@ -47,11 +53,11 @@ class MerkleTree:
             return ans
         if(self.size == 1):
             return ans
-        if (i < self.size / 2):
+        if (i < self.size // 2):
             ans = self.left.get_hash_path(i)
             ans.append(self.right.digest)
         else:
-            ans = self.right.get_hash_path(i - self.size / 2)
+            ans = self.right.get_hash_path(i - self.size // 2)
             ans.append(self.left.digest)
 
         return ans    
