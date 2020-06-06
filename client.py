@@ -30,8 +30,8 @@ b = Ballot(config)
 #             format=serialization.PublicFormat.SubjectPublicKeyInfo
 #         ).hex())
 print(b.register())
-
-# print(b.register())
+exit()
+print(b.register())
 b1 = Ballot(config)
 print(b1.register())
 # bc = processor.get_blockchain()
@@ -49,6 +49,7 @@ print("My Balance is: ", ballots[0].tally())
 print("My Balance is: ", ballots[1].tally())
 print("My Balance is: ", ballots[2].tally())
 print("My Balance is: ", ballots[3].tally())
+print("The blockchain is: ", b.get_blockchain())
 
 print("About to vote for someone")
 print("Vote is: ", ballots[0].vote(ballots[2].public))
