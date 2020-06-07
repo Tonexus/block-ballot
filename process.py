@@ -3,6 +3,8 @@ from ballot import Issuer
 from merkle import MerkleTree
 from transaction import Transaction
 
+import threading
+
 import xmlrpc.client
 import threading
 import pickle
@@ -15,7 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
-TRANSACTIONS_PER_BLOCK = 3
+DEFAULT_TRANSACTIONS_PER_BLOCK = 3
 def hex2(n):
     x = '%x' % (n,)
     return ('0' * (len(x) % 2)) + x
@@ -29,7 +31,7 @@ class ProcessNode(object):
         self.nodes = []
         for i in range(len(node_addresses)):
             if i != node_id:
-                self.nodes.append(xmlrpc.client.ServerProxy(node_addresses[i]))
+                self.nodes.append(xmlrpc.client.ServerProxy(node_addresses[i], allow_none=True))
 
         #wallet records on blockchain
         # self.coins_from_issuer={}
@@ -41,7 +43,7 @@ class ProcessNode(object):
         #self.s_coins_map={}
         self.id = node_id
 
-        self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
+        self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
         self.issuer_id = issuer_id
         self.voters_map = voters_map
 
@@ -58,6 +60,12 @@ class ProcessNode(object):
             backend=default_backend()
             )
         self.public = self.private.public_key()
+        self.is_mining = False
+        self.mining_thread = None
+        self.recieved_new_block = False
+        self.transactions_per_block = DEFAULT_TRANSACTIONS_PER_BLOCK
+        self.mining_transactions = []
+
 
 
     #get a voter's public key
@@ -66,8 +74,8 @@ class ProcessNode(object):
             self.voters_map[id] = self.issuer.get_pkey(id)
         return self.voters_map[id]
 
-    def set_genesis(self, public_key, num_zeros):
-        print("Set genesis called")
+    def set_genesis(self, public_key, num_zeros, num_transactions):
+        # print("Set genesis called")
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
         self.genesis_block = GenesisBlock(public_key, "", num_zeros)
@@ -89,6 +97,15 @@ class ProcessNode(object):
 
         self.interrupt_mining = 1
         self.issuer_id = public_key
+        self.transactions_per_block = num_transactions
+        self.mining_thread = None
+        if self.mining_thread:
+            self.mining_thread.terminate()
+        self.mining_thread = None
+        self.is_mining = False
+        self.mining_transactions = []
+        self.recieved_new_block = False
+
 
 
     #replace bc1 with bc2
@@ -154,27 +171,32 @@ class ProcessNode(object):
     #similar to verify blockchain
     #if succeeds, update state data
     def verify_block(self, newblock):
-        print("Verify block called")    
+        # print("Verify block called")    
         if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
+            print('Prev hash isnt right')
             return False
 
         coins_from_issuer=self.cur_coins_from_issuer.copy()
         coins_from_voter=self.cur_coins_from_voter.copy()
         
         #check transactions
-        print("About to forloop inside verify_block")
-        if len(newblock.transactions) < 2:
+        # print("About to forloop inside verify_block")
+        if len(newblock.transactions) != self.transactions_per_block + 1:
+            print('Num transactions incorrect', len(newblock.transactions), self.transactions_per_block)
             return False
+        block_transactions = []
         for transaction in newblock.transactions[1:]:
-            print("About to call verify transactions")
-            if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
-                print("Inside if about to return false")
+            # print("About to call verify transactions")
+            if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter, block_transactions)):
+                print("Transaction not valid inside verify block")
                 return False
-            print("Outside if")
+            # add to minig_transactions
+            block_transactions.append(transaction)
+            # print("Outside if")
         #check block.roothash
         tmp_MerkleTree = MerkleTree(newblock.transactions)
         if(tmp_MerkleTree.get_hash()!=newblock.block.root_hash):
-            print("About to return false after the merkel tree")
+            # print("About to return false after the merkel tree")
             return False
 
         # self.coins_from_issuer = coins_from_issuer
@@ -182,7 +204,7 @@ class ProcessNode(object):
 
         # self.cur_coins_from_issuer = coins_from_issuer
         # self.cur_coins_from_voter = coins_from_voter
-        self.pending_transactions=[]
+        # self.pending_transactions=[]
 
         return True       
 
@@ -190,7 +212,7 @@ class ProcessNode(object):
     #2.check signature
     #3.check with the wallet records
     # Logical Transaction
-    def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter):
+    def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter, block_transactions):
         (block_id, transaction_id) = transaction.src_transact_id
         if block_id == 0:
             src_str = self.genesis_block.issr_pub_key
@@ -205,48 +227,39 @@ class ProcessNode(object):
         # src_pkey = self.get_pkey(src)
         # if(src_pkey==None):
         #     return False
-        print("before verify", type(transaction))
+        # print("before verify", type(transaction))
         if(not transaction.verify(src)):
             return False
-        print("After verify")
+        # print("After verify")
         # if(self.get_pkey(dst)==None):
         #         return False
 
         if(src_str != self.genesis_block.issr_pub_key):
-            print("VERIFY_TRANSACTIN: inside if")
+            # print("VERIFY_TRANSACTIN: inside if")
             # if src not in coins_from_issuer:
             #     coins_from_issuer[src] = 0
             # if dst not in coins_from_voter:
             #     coins_from_voter[dst] = 0
+            if src_str not in coins_from_issuer:
+                return False
             if coins_from_issuer[src_str] == 0:
                 return False
-            print(len(self.pending_transactions))
-            for transaction_bc in self.pending_transactions:
+            for transaction_bc in block_transactions:
                     if transaction_bc.src_transact_id == (block_id, transaction_id): #and transaction_bc.to_hash() != transaction.to_hash():
                         return False
             # coins_from_issuer[src]-=1
             # coins_from_voter[dst]+=1
         else:
-            print("Inside else, coin from Issuer", dst)
-            print("DST is: ", dst)
-            print("The Keys: ", coins_from_issuer.keys())
+            # print("Inside else, coin from Issuer", dst)
+            # print("DST is: ", dst)
+            # print("The Keys: ", coins_from_issuer.keys())
             if dst not in coins_from_issuer:
-                for transaction_bc in self.pending_transactions:
+                for transaction_bc in block_transactions:
                     if transaction_bc.dst_pub_key == dst:
                         return False
                 return True
             else:
                 return False
-            for block in self.blockchain[1:]:
-                print("Inside for loop inside block , verify_transaction", block.transactions)
-                for transactionbc in block.transactions:
-                    if transactionbc.src_transact_id[0] == 0:
-                        if transactionbc.dst_pub_key == transaction.dst_pub_key:
-                            # We have a problem
-                            return False
-                            # otherwise fine
-
-
 
         return True
 
@@ -265,21 +278,21 @@ class ProcessNode(object):
 
             if(src_str != self.genesis_block.issr_pub_key):
                 # Voter sending vote to other voter
-                # print("Inside the if part", self.cur_coins_from_issuer)
+                # # print("Inside the if part", self.cur_coins_from_issuer)
                 if src_str not in self.cur_coins_from_issuer:
-                    # print("Inside not coins from issuer")
+                    # # print("Inside not coins from issuer")
                     return False
                     # self.cur_coins_from_issuer[src] = 0
                 if dst not in self.cur_coins_from_voter:
                     self.cur_coins_from_voter[dst] = 0
                 if self.cur_coins_from_issuer[src_str]==0 :
                     return False
-                # print("METADATA updating-----------")
+                # # print("METADATA updating-----------")
                 self.cur_coins_from_issuer[src_str]-=1
                 self.cur_coins_from_voter[dst]+=1
             else:
                 # Issuer issuing a vote
-                # print("METADATA: Else")
+                # # print("METADATA: Else")
                 self.cur_coins_from_issuer[dst] = 1
         return True
 
@@ -288,25 +301,27 @@ class ProcessNode(object):
     def add_transaction(self, transaction, id):
         #lock here
         self.lock.acquire()
-        print(transaction)
-        print("Type of transaction: ",type(transaction))
-
+        # print(transaction)
+        # print("Type of transaction: ",type(transaction))
         transaction = pickle.loads(transaction.data)
-        print("After pickle.load")
-        if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
-            print("Inside if on add_transaction", id)
+        # print("After pickle.load")
+        if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter, [])):
+            # print("Inside if on add_transaction", id)
             self.pending_transactions.append(transaction)
-            if len(self.pending_transactions) == TRANSACTIONS_PER_BLOCK:
+            if len(self.pending_transactions) == self.transactions_per_block and not self.is_mining:
                 # Call mining
-                self.lock.release()
+                # self.is_mining = True
                 self.interrupt_mining=1
+                self.lock.release()
                 # spawn new process unless already mining?
-                self.mining()
+                self.mining_thread = threading.Thread(target=self.mining, args=())
+                self.mining_thread.start()
+                # self.mining()
                 return True
             self.lock.release()
             return True
         else:
-            print("Inside else, inside add_transaction, about to return false")
+            # print("Inside else, inside add_transaction, about to return false")
             self.lock.release()
             return False
         
@@ -319,15 +334,41 @@ class ProcessNode(object):
     def add_block(self, newblock, id):  
         #lock here
         self.lock.acquire()
+        if id != self.id:
+            newblock = pickle.loads(newblock.data)
         if(not self.verify_block(newblock)):
+            # The block is not valid
+            print('Shoudlnt happen since block is valid')
             self.lock.release()
-            if(id==-1):
+            if(id==self.id):
                 return False
-            t1 = threading.Thread(self.nodes[id].update_blockchain,(self.blockchain))
+            t1 = threading.Thread(target=self.nodes[id].update_blockchain,args=(self.blockchain))
             t1.start()
             return False
         else:
-            print("The block is verified")
+            # print("The block is valid")
+            # update pending transactions
+            # else:
+                # we called add_block on ourselves
+                # probabl;y do nothing else
+            # readd mining_transactions to pending maybe
+            
+            if self.is_mining and id is not self.id:
+                self.recieved_new_block = True
+                # self.mining_thread.terminate()
+                if len(self.mining_transactions) > 0:
+                    self.pending_transactions = self.mining_transactions[1:] + self.pending_transactions
+                    self.mining_transactions = []
+
+            #     # if receive block from someone else
+            #     self.mining_thread.stop()
+            #     temp store pending and mining transactions
+            #     set those to []
+                
+            #     for transaction in self.mining_transactions:
+            #         self.add_transaction(transaction) if valid
+            #     for transaciton in pending:
+            #         self.add_transactin(transation) if valid
             self.blockchain.append(newblock)
             # update the metadata
             self.update_metadata(newblock)
@@ -336,8 +377,11 @@ class ProcessNode(object):
 
     def RPC_add_block(self, newblock):
         for node in self.nodes:
-            t1 = threading.Thread(node.add_block,(newblock, self.id))
-            t1.start()
+            print(newblock)
+            newblock = pickle.dumps(newblock)
+            node.add_block(newblock, self.id)
+            # t1 = threading.Thread(target=node.add_block,args=(newblock, self.id))
+            # t1.start()
 
     def get_blockchain(self):
         return pickle.dumps(self.blockchain)
@@ -524,41 +568,81 @@ class ProcessNode(object):
             return True
         return False
 
-    
+
+
+
     def mining(self):
+        # self.recieved_new_block
+        self.lock.acquire()
+        self.is_mining = True
         nonce = 0
         pre_hash = self.blockchain[-1].block.to_hash()
-        print("About to make block in mining")
+        # print("About to make block in mining")
         reward_transaction = Transaction((0,1), self.public, None, self.private)
-        print("After making reward transaction")
-        self.pending_transactions.insert(0, reward_transaction)
-        print("After prepending transaction")
-        newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions[0:TRANSACTIONS_PER_BLOCK + 1], hex2(nonce))
-        print("Made block in mining")
-        while(True):
+        # print("After making reward transaction")
+        to_remove = []
+        for transaction in self.pending_transactions:
+            if self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter, self.mining_transactions):
+                self.mining_transactions.append(transaction)
+            to_remove.append(transaction)
+            if len(self.mining_transactions) == self.transactions_per_block:
+                break
+        for t in to_remove:
+            self.pending_transactions.remove(t)
+        # print('Length of pending transactions after removing elements in mining(): ', len(self.pending_transactions))
+        if len(self.mining_transactions) < self.transactions_per_block:
+            self.pending_transactions = self.mining_transactions
+            self.mining_transactions = []
+            self.is_mining = False
+            self.lock.release()
+            return
+            # verify transaction again with maybe a side pending transactions list
+
+        self.mining_transactions = [reward_transaction] + self.mining_transactions
+        # self.pending_transactions = self.pending_transactions[self.transactions_per_block:]
+        # # print('The length of the mining_transactions is: ', len(self.mining_transactions))
+        # self.pending_transactions.insert(0, reward_transaction)
+        # make a new list of mining transactions
+        # # print("After prepending transaction")
+        newblock = LogicalBlock(pre_hash, len(self.blockchain), self.mining_transactions, hex2(nonce))
+        self.lock.release()
+        # print("Made block in mining")
+        while(not self.recieved_new_block): #not self.recieved_new_block):
             if(self.interrupt_mining==1):
                 nonce=0
-                print("About to call to_hash")
+                # print("About to call to_hash")
                 pre_hash = self.blockchain[len(self.blockchain)-1].block.to_hash()
-                print("About to call new block", pre_hash)
+                # print("About to call new block", pre_hash)
 
-                newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, hex2(nonce))
+                newblock = LogicalBlock(pre_hash, len(self.blockchain), self.mining_transactions, hex2(nonce))
                 self.interrupt_mining = 0
 
             #newblock = LogicalBlock(pre_hash, len(self.blockchain), self.pending_transactions, nonce)
-            print("About to call build_block")
+            # print("About to call build_block")
             newblock.block = newblock.build_block_data(hex2(nonce))
-            if(self.check_hash(newblock.block.to_hash())):
-                print("Inisde the if statement", self.nodes, newblock.__dict__)
-                self.pending_transactions = self.pending_transactions[TRANSACTIONS_PER_BLOCK + 1:]
-                self.add_block(newblock,-1)
-                print("About to call rpc add block")
+            if(self.check_hash(newblock.block.to_hash())): # and not self.recieved_new_block):
+                # print("Inisde the if statement", self.nodes, newblock.__dict__)
+                # set miningtransactios to empty list
+                # acquire lock
+                # other.add_block()
+                if not self.add_block(newblock,self.id):
+                    self.lock.acquire()
+                    self.pending_transactions = self.mining_transactions[1:] + self.pending_transactions
+                    self.mining_transactions = []
+                    self.lock.release()
+                    break
+                # print("About to call rpc add block")
                 self.RPC_add_block(newblock)
-                print("After RPC add block")
+                # print("After RPC add block")
                 self.interrupt_mining = 1
-
+                self.mining_transactions = []
                 break 
-
             nonce = self.getnext(nonce)
+        if self.recieved_new_block:
+            self.recieved_new_block = False
+        # print('Size of pending transactions after done mining: ',len(self.pending_transactions))
+        if len(self.pending_transactions) >= self.transactions_per_block: # and not self.recieved_new_block:
+            self.mining()
+        self.is_mining = False
 
 pro = ProcessNode(None,[],0,"", {}, {'issuer_address':'http://localhost:12345/ISSUER'})

@@ -1,5 +1,5 @@
 {
-	"issuer_config": {},
+	"issuer_config": {"num_zeros": 2, "transactions_per_block": 3},
 	"processor_config": {
 		"initblockchain" : "None",
 		"voters_map" : {}, 
@@ -7,7 +7,7 @@
 			"issuer_address": "https://localhost:12345/ISSUER"
 		}
 	},
-	"nodes": ["http://localhost:30001/PROCESSOR"],
+	"nodes": ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR"],
 	"node_ports": [30001]
 
 }

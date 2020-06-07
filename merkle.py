@@ -20,13 +20,8 @@ class MerkleTree:
             # otherwise, split transactions in half and form subtrees
             # hash is combined from left and right
             self.transact_data = None
-            print("before self.left", self.size)
-
             self.left = MerkleTree(transacts[:self.size//2])
-            print("After self.left")
-
             self.right = MerkleTree(transacts[self.size//2:])
-            print("After self.right")
             digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
             digest.update(bytes.fromhex(self.left.digest))
             digest.update(bytes.fromhex(self.right.digest))
@@ -38,7 +33,6 @@ class MerkleTree:
 
     def get_transaction(self, i):
         """get a transaction base don its index in the original ist of transactions"""
-        print('Inside get_transaction: ', self.size)
         if i < 0 or i >= self.size:
             raise IndexError("Not in range of values")
         if self.size == 1:

@@ -62,14 +62,15 @@ class Wallet:
         self.nodes = []
         self.transaction_hash = None
         for node_address in node_addresses:
-            self.nodes.append(xmlrpc.client.ServerProxy(node_address))
+            self.nodes.append(xmlrpc.client.ServerProxy(node_address, allow_none=True))
 
     def pick_nodes(self):
         """ Function to pick subset of nodes to send transactions to
         Right not picking random subset of the nodes"""
         if self.nodes == []:
             return []
-        return sample(self.nodes,1)
+        return [self.nodes[0]]
+        # return sample(self.nodes,1)
 
 
     def make_transaction(self, public_key):
@@ -115,6 +116,8 @@ class Wallet:
                     break
                 i-=1
         print(self.source_transaction_id, self.transaction_hash)
+        if self.source_transaction_id is None:
+            return None, None, self.transaction_hash
         transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
         self.transaction_hash = transaction.to_hash()
         for tries in range(MAX_TRIES):
@@ -271,7 +274,7 @@ class Ballot(Wallet):
             Address of the Issuer
         """
         super().__init__(config['node_addresses'])
-        self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
+        self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
         self.issuer_address = config['issuer_address']
         self.registered = False
         self.source_transaction_id = -1
@@ -348,7 +351,8 @@ class Issuer(Wallet):
     def __init__(self, config):
         super().__init__(config['node_addresses'])
         self.voters = []
-        self.pow_config = config['pow_config']
+        self.num_zeros = config['num_zeros']
+        self.transactions_per_block = config['transactions_per_block']
         self.source_transaction_id = (0, 0)
         self.source_transaction_data = None
 
@@ -360,10 +364,9 @@ class Issuer(Wallet):
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).hex()
-        num_zeros = 2
         for node in self.nodes:
-            node.set_genesis(public_key_hex, num_zeros)
-
+            node.set_genesis(public_key_hex, self.num_zeros, self.transactions_per_block)
+        return True
 
     def register(self, public_key):
         """ Gives the public key a coin on the chain

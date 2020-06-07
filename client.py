@@ -17,8 +17,9 @@ config['issuer_address'] = 'http://localhost:12345/ISSUER'
 config['node_addresses'] = ["http://localhost:30001/PROCESSOR"]
 
 
-issuer = xmlrpc.client.ServerProxy(config['issuer_address'])
-processor = xmlrpc.client.ServerProxy(config['node_addresses'][0])
+issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
+processor = xmlrpc.client.ServerProxy(config['node_addresses'][0], allow_none=True)
+# processor.add_block(None)
 
 
 print(issuer.start_election())
@@ -30,8 +31,7 @@ b = Ballot(config)
 #             format=serialization.PublicFormat.SubjectPublicKeyInfo
 #         ).hex())
 print(b.register())
-exit()
-print(b.register())
+# print(b.register())
 b1 = Ballot(config)
 print(b1.register())
 # bc = processor.get_blockchain()
@@ -49,7 +49,7 @@ print("My Balance is: ", ballots[0].tally())
 print("My Balance is: ", ballots[1].tally())
 print("My Balance is: ", ballots[2].tally())
 print("My Balance is: ", ballots[3].tally())
-print("The blockchain is: ", b.get_blockchain())
+# print("The blockchain is valid?: ", b.get_blockchain())
 
 print("About to vote for someone")
 print("Vote is: ", ballots[0].vote(ballots[2].public))

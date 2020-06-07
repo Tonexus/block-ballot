@@ -1,0 +1,133 @@
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 198, in verify_transaction
+    (block_id, transaction_id) = transaction.src_transact_id
+TypeError: 'NoneType' object is not iterable
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+TypeError: set_genesis() missing 1 required positional argument: 'num_transactions'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 291, in add_transaction
+    def add_transaction(self, transaction, id):
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 298, in add_transaction
+    if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter, [])):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 212, in verify_transaction
+    src_str = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+  File "/Users/cgraves/Git/github/block-ballot/block.py", line 70, in get_transaction
+    return self.tree.get_transaction(i)
+  File "/Users/cgraves/Git/github/block-ballot/merkle.py", line 43, in get_transaction
+    raise IndexError("Not in range of values")
+IndexError: Not in range of values
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 293, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+0-----
+
+
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 335, in add_block
+    if(not self.verify_block(newblock)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 175, in verify_block
+    if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
+AttributeError: 'dict' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 335, in add_block
+    if(not self.verify_block(newblock)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 175, in verify_block
+    if(newblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
+AttributeError: 'dict' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 342, in add_block
+    t1 = threading.Thread(target=self.nodes[id].update_blockchain,args=(self.blockchain))
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 154, in update_blockchain
+    if(self.verify_blockchain(self.blockchain,blockchain)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 124, in verify_blockchain
+    if(blockchain2[i].prev_block_hash!=blockchain2[i-1].block.to_hash()):
+KeyError: 1
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 355, in add_block
+    self.mining_thread.terminate()
+AttributeError: 'Thread' object has no attribute 'terminate'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 342, in add_block
+    t1 = threading.Thread(target=self.nodes[id].update_blockchain,args=(self.blockchain))
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 154, in update_blockchain
+    if(self.verify_blockchain(self.blockchain,blockchain)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 124, in verify_blockchain
+    if(blockchain2[i].prev_block_hash!=blockchain2[i-1].block.to_hash()):
+KeyError: 1
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 343, in add_block
+    t1 = threading.Thread(target=self.nodes[id].update_blockchain,args=(self.blockchain))
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 154, in update_blockchain
+    if(self.verify_blockchain(self.blockchain,blockchain)):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 124, in verify_blockchain
+    if(blockchain2[i].prev_block_hash!=blockchain2[i-1].block.to_hash()):
+KeyError: 1
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt

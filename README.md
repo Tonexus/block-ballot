@@ -1,6 +1,6 @@
 To start the Issuer
 
-python3 run_issuer.py -p <port number>
+python3 run_issuer.py -c <config file>
 
 To run a processor
 
@@ -9,7 +9,7 @@ python3 run_processor.py -c <config file> -i <index into list of nodes in config
 Config file json
 
 {
-	"issuer_config": {},
+	"issuer_config": {"num_zeros": 2, "transactions_per_block": 3},
 	"processor_config": {
 		"initblockchain" : "None",
 		"voters_map" : {}, 
