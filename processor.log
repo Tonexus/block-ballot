@@ -137,3 +137,247 @@ Traceback (most recent call last):
   File "/Users/cgraves/Git/github/block-ballot/process.py", line 316, in add_transaction
     def add_transaction(self, transaction, id):
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 370, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1166, in single_request
+    http_conn = self.send_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1272, in send_request
+    connection.putrequest("POST", handler, skip_accept_encoding=True)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1108, in putrequest
+    raise CannotSendRequest(self.__state)
+http.client.CannotSendRequest: Request-sent
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 370, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 320, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 370, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+IndexError: list index out of range
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 320, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 372, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1166, in single_request
+    http_conn = self.send_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1272, in send_request
+    connection.putrequest("POST", handler, skip_accept_encoding=True)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1108, in putrequest
+    raise CannotSendRequest(self.__state)
+http.client.CannotSendRequest: Request-sent
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 372, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1166, in single_request
+    http_conn = self.send_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1272, in send_request
+    connection.putrequest("POST", handler, skip_accept_encoding=True)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1108, in putrequest
+    raise CannotSendRequest(self.__state)
+http.client.CannotSendRequest: Request-sent
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 322, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 372, in add_block
+    other_bc = pickle.loads(self.nodes[id].get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1166, in single_request
+    http_conn = self.send_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1272, in send_request
+    connection.putrequest("POST", handler, skip_accept_encoding=True)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1108, in putrequest
+    raise CannotSendRequest(self.__state)
+http.client.CannotSendRequest: Request-sent
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 322, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 355, in add_block
+    #lock here
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 355, in add_block
+    #lock here
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 375, in add_block
+    print('About to call get_blockchain')
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1167, in single_request
+    resp = http_conn.getresponse()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1331, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 297, in begin
+    version, status, reason = self._read_status()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 258, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/socket.py", line 586, in readinto
+    return self._sock.recv_into(b)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 388, in add_block
+    self.cur_coins_from_voter = coins_from_voter
+NameError: name 'coins_from_voter' is not defined
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 377, in add_block
+    print('About to call get_blockchain')
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1167, in single_request
+    resp = http_conn.getresponse()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1331, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 297, in begin
+    version, status, reason = self._read_status()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 258, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/socket.py", line 586, in readinto
+    return self._sock.recv_into(b)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 379, in add_block
+    other_bc = pickle.loads(rpc_obj.get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1167, in single_request
+    resp = http_conn.getresponse()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1331, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 297, in begin
+    version, status, reason = self._read_status()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 258, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/socket.py", line 586, in readinto
+    return self._sock.recv_into(b)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    def _dispatch(self, method, params):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 379, in add_block
+    other_bc = pickle.loads(rpc_obj.get_blockchain().data)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1112, in __call__
+    return self.__send(self.__name, args)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1452, in __request
+    verbose=self.__verbose
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1154, in request
+    return self.single_request(host, handler, request_body, verbose)
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/xmlrpc/client.py", line 1167, in single_request
+    resp = http_conn.getresponse()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 1331, in getresponse
+    response.begin()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 297, in begin
+    version, status, reason = self._read_status()
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/http/client.py", line 258, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+  File "/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/socket.py", line 586, in readinto
+    return self._sock.recv_into(b)
+KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    def _dispatch(self, method, params):
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
+    self.lock.acquire()
+KeyboardInterrupt
