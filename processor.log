@@ -131,3 +131,9 @@ Traceback (most recent call last):
   File "/Users/cgraves/Git/github/block-ballot/process.py", line 301, in add_transaction
     self.lock.acquire()
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 40, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 316, in add_transaction
+    def add_transaction(self, transaction, id):
+KeyboardInterrupt
