@@ -21,7 +21,7 @@ class Block:
         return digest.finalize().hex()
 
 class GenesisBlock:
-    def __init__(self, issr_pub_key, metadata, num_zeros):
+    def __init__(self, issr_pub_key, metadata, num_zeros, block_size):
         self.issr_pub_key = issr_pub_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -32,7 +32,7 @@ class GenesisBlock:
         self.nonce = ""
         self.root_hash = ""
         self.num_zeros = num_zeros
-
+        self.block_size = block_size
 
     def to_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())

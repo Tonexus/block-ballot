@@ -1,21 +1,16 @@
-from block import Block,LogicalBlock,GenesisBlock
-from ballot import Issuer
-from merkle import MerkleTree
-from transaction import Transaction
-
-import threading
-
 import xmlrpc.client
 import threading
 import pickle
 
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
-
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+
+from block import LogicalBlock, GenesisBlock
+from merkle import MerkleTree
+from transaction import Transaction
+import putil
 
 DEFAULT_TRANSACTIONS_PER_BLOCK = 3
 def hex2(n):
@@ -35,21 +30,17 @@ class ProcessNode(object):
             else:
                 self.nodes.append(xmlrpc.client.ServerProxy(node_addresses[i], allow_none=True))
 
-        #wallet records on blockchain
-        # self.coins_from_issuer={}
-        # self.coins_from_voter={}
-        #wallet records plus pending_transactions
-        self.cur_coins_from_issuer={}
-        self.cur_coins_from_voter={}
+        # wallet metadata on blockchain
+        self.cur_coins_from_issuer = {}
+        self.cur_coins_from_voter = {}
 
-        #self.s_coins_map={}
         self.id = node_id
 
         self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
         self.issuer_id = issuer_id
         self.voters_map = voters_map
 
-        self.pending_transactions=[]
+        self.pending_transactions = []
 
         self.lock = threading.Lock()
         self.nodes_lock = threading.Lock()
@@ -73,7 +64,7 @@ class ProcessNode(object):
 
     #get a voter's public key
     def get_pkey(self, id):
-        if(self.voters_map[id]==None):
+        if self.voters_map[id] is None:
             self.voters_map[id] = self.issuer.get_pkey(id)
         return self.voters_map[id]
 
@@ -81,79 +72,29 @@ class ProcessNode(object):
         # print("Set genesis called")
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
-        self.genesis_block = GenesisBlock(public_key, "", num_zeros)
+        self.genesis_block = GenesisBlock(public_key, "", num_zeros, DEFAULT_TRANSACTIONS_PER_BLOCK + 1)
         logical_block = LogicalBlock("", 0, None, None)
         logical_block.block = self.genesis_block
         self.blockchain = [logical_block]
         self.blockheaders = []
 
-        #wallet records on blockchain
-        # self.coins_from_issuer={}
-        # self.coins_from_voter={}
-        #wallet records plus pending_transactions
-        self.cur_coins_from_issuer={}
-        self.cur_coins_from_voter={}
+        # wallet metadata on blockchain
+        self.cur_coins_from_issuer = {}
+        self.cur_coins_from_voter = {}
 
-        #self.s_coins_map={}
-
-        self.pending_transactions=[]
+        self.pending_transactions = []
 
         self.interrupt_mining = 1
         self.issuer_id = public_key
         self.transactions_per_block = num_transactions
         self.mining_thread = None
         if self.mining_thread:
-            self.mining_thread.terminate()
+            self.mining_thread.terminate() # BAD
         self.mining_thread = None
         self.is_mining = False
         self.mining_transactions = []
         self.recieved_new_block = False
-        print("End of set genesis block, length of blockchain should be 1 but is: ", len(self.blockchain))
-
-
-    #replace bc1 with bc2
-    #1.check length of blockchains
-    #2.check pointers of blockchains
-    #3.check each transaction
-    #4.check root hash of merkle tree
-    #5.update some state data     ours         other
-    def verify_blockchain(self, blockchain):
-        """ check length """
-        
-        #check pointers
-        for i in range(1,len(blockchain)):
-            if blockchain[i].prev_block_hash != blockchain[i-1].block.to_hash():
-                return None, None
-
-        coins_from_issuer={}
-        coins_from_voter={}
-        transactions = []
-        blockchain = []
-        for logic_block in blockchain:
-            #check transactions
-            if self.verify_block(logic_block, blockchain, coins_from_issuer, coins_from_voter):
-                blockchain.append(logic_block)
-                self.update_metadata(logic_block, blockchain, coins_from_issuer, coins_from_voter)
-                # update meta_data
-            else:
-                return None, None
-            # for transaction in logic_block.transactions:
-            #     if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter, transactions)):
-            #         return False
-            #     transactions.append(transaction)
-            # #check block.roothash
-            # tmp_MerkleTree = MerkleTree(logic_block.transactions)
-            # if(tmp_MerkleTree.get_hash!=logic_block.block.root_hash):
-            #     return False
-
-        # self.coins_from_issuer = coins_from_issuer
-        # self.coins_from_voter = coins_from_voter
-
-        # self.cur_coins_from_issuer = coins_from_issuer
-        # self.cur_coins_from_voter = coins_from_voter
-        # self.pending_transactions=[]
-
-        return coins_from_issuer, coins_from_voter        
+        print("End of set genesis block, length of blockchain should be 1 but is: ", len(self.blockchain))      
 
     #other process nodes or Issuer can call this
     #if the blockchain is verified, update self.blockchain with it
@@ -161,7 +102,7 @@ class ProcessNode(object):
     def update_blockchain(self, blockchain, id):
         #lock here
         self.lock.acquire()
-        if(self.verify_blockchain(blockchain)):
+        if putil.valid_blockchain(blockchain):
             self.interrupt_mining=1
             self.blockchain = blockchain
             self.cur_coins_from_issuer = {}
@@ -173,149 +114,10 @@ class ProcessNode(object):
             t1 = threading.Thread(self.nodes[id].update_blockchain(self.blockchain, self.id))
             t1.start()
 
-
     def RPC_update_blockchain(self):
         for node in self.nodes:
             t1 = threading.Thread(node.update_blockchain, (self.blockchain, self.id))
             t1.start()
-
-    #similar to verify blockchain
-    #if succeeds, update state data
-    def verify_block(self, newblock, blockchain, coins_from_issuer, coins_from_voter):
-        # print("Verify block called")
-        if blockchain is None:
-            return False
-        if len(blockchain) == 0:
-            if type(newblock.block) is GenesisBlock: # ?
-                print("The first block of an empty blockchain is a GenesisBlock")
-                return True
-            else:
-                print("The first block in chain is not a genesis block", type(newblock), type(newblock.block))
-                return False
-        if(newblock.prev_block_hash!=blockchain[len(blockchain)-1].block.to_hash()):
-            print('Prev hash isnt right')
-            return False
-
-        # coins_from_issuer=self.cur_coins_from_issuer.copy()
-        # coins_from_voter=self.cur_coins_from_voter.copy()
-        
-        #check transactions
-        # print("About to forloop inside verify_block")
-        if len(newblock.transactions) != self.transactions_per_block + 1:
-            print('Num transactions incorrect', len(newblock.transactions), self.transactions_per_block)
-            return False
-        block_transactions = []
-        for transaction in newblock.transactions[1:]:
-            # print("About to call verify transactions")
-            if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter, block_transactions, blockchain)):
-                print("Transaction not valid inside verify block")
-                return False
-            # add to minig_transactions
-            block_transactions.append(transaction)
-            # print("Outside if")
-        #check block.roothash
-        tmp_MerkleTree = MerkleTree(newblock.transactions)
-        if(tmp_MerkleTree.get_hash()!=newblock.block.root_hash):
-            # print("About to return false after the merkel tree")
-            return False
-
-        # self.coins_from_issuer = coins_from_issuer
-        # self.coins_from_voter = coins_from_voter
-
-        # self.cur_coins_from_issuer = coins_from_issuer
-        # self.cur_coins_from_voter = coins_from_voter
-        # self.pending_transactions=[]
-
-        return True       
-
-    #1.check the validation of sender and receiver
-    #2.check signature
-    #3.check with the wallet records
-    # Logical Transaction
-    def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter, block_transactions, blockchain):
-        (block_id, transaction_id) = transaction.src_transact_id
-        if block_id == 0:
-            src_str = blockchain[0].block.issr_pub_key
-            pk_bytes = bytes.fromhex(src_str)
-            src = load_pem_public_key(pk_bytes, backend=default_backend())
-        else:
-            src_str = blockchain[block_id].get_transaction(transaction_id).dst_pub_key
-            pk_bytes = bytes.fromhex(src_str)
-            src = load_pem_public_key(pk_bytes, backend=default_backend())
-
-        dst = transaction.dst_pub_key
-        # src_pkey = self.get_pkey(src)
-        # if(src_pkey==None):
-        #     return False
-        # print("before verify", type(transaction))
-        if(not transaction.verify(src)):
-            return False
-        # print("After verify")
-        # if(self.get_pkey(dst)==None):
-        #         return False
-
-        if(src_str != blockchain[0].block.issr_pub_key):
-            # print("VERIFY_TRANSACTIN: inside if")
-            # if src not in coins_from_issuer:
-            #     coins_from_issuer[src] = 0
-            # if dst not in coins_from_voter:
-            #     coins_from_voter[dst] = 0
-            if src_str not in coins_from_issuer:
-                return False
-            if coins_from_issuer[src_str] == 0:
-                return False
-            for transaction_bc in block_transactions:
-                    if transaction_bc.src_transact_id == (block_id, transaction_id): #and transaction_bc.to_hash() != transaction.to_hash():
-                        return False
-            # coins_from_issuer[src]-=1
-            # coins_from_voter[dst]+=1
-        else:
-            # print("Inside else, coin from Issuer", dst)
-            # print("DST is: ", dst)
-            # print("The Keys: ", coins_from_issuer.keys())
-            if dst not in coins_from_issuer:
-                for transaction_bc in block_transactions:
-                    if transaction_bc.dst_pub_key == dst:
-                        return False
-                return True
-            else:
-                return False
-
-        return True
-
-    def update_metadata(self, new_block, blockchain, coins_from_issuer, coins_from_voter):
-        for transaction in new_block.transactions[1:]:
-            (block_id, transaction_id) = transaction.src_transact_id
-            if block_id == 0:
-                src_str = blockchain[0].block.issr_pub_key
-                pk_bytes = bytes.fromhex(src_str)
-                src = load_pem_public_key(pk_bytes, backend=default_backend())
-            else:
-                src_str = blockchain[block_id].get_transaction(transaction_id).dst_pub_key
-                pk_bytes = bytes.fromhex(src_str)
-                src = load_pem_public_key(pk_bytes, backend=default_backend())
-            dst = transaction.dst_pub_key
-
-            if(src_str != blockchain[0].block.issr_pub_key):
-                # Voter sending vote to other voter
-                # # print("Inside the if part", self.cur_coins_from_issuer)
-                if src_str not in coins_from_issuer:
-                    # # print("Inside not coins from issuer")
-                    return False
-                    # self.cur_coins_from_issuer[src] = 0
-                if dst not in coins_from_voter:
-                    coins_from_voter[dst] = 0
-                if coins_from_issuer[src_str]==0 :
-                    return False
-                # # print("METADATA updating-----------")
-                coins_from_issuer[src_str]-=1
-                coins_from_voter[dst]+=1
-            else:
-                # Issuer issuing a vote
-                # # print("METADATA: Else")
-                coins_from_issuer[dst] = 1
-        return True
-
 
     #can call by other process nodes or just this node 
     def add_transaction(self, transaction, id):
@@ -325,7 +127,7 @@ class ProcessNode(object):
         # print("Type of transaction: ",type(transaction))
         transaction = pickle.loads(transaction.data)
         # print("After pickle.load")
-        if(self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter, [], self.blockchain)):
+        if putil.valid_transaction(transaction, self.blockchain, self.cur_coins_from_issuer, []):
             # print("Inside if on add_transaction", id)
             self.pending_transactions.append(transaction)
             if len(self.pending_transactions) == self.transactions_per_block and not self.is_mining:
@@ -357,14 +159,14 @@ class ProcessNode(object):
         if id != self.id:
             newblock = pickle.loads(newblock.data)
         print("Length of self.blockchain: ", len(self.blockchain))
-        if(not self.verify_block(newblock, self.blockchain, self.cur_coins_from_issuer, self.cur_coins_from_voter)):
+        if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
             # The block is not valid
             print('Shoudlnt happen since block is valid')
             # recovery on ourselves if we don't have the longest blockchain
             # for node in nodes:
             #     get the longest blockchain
             # if valid then make that ours
-            if(id==self.id):
+            if id == self.id:
                 print('ID was my own id inside add_block')
                 self.lock.release()
                 return False
@@ -381,7 +183,7 @@ class ProcessNode(object):
 
             # self.nodes_lock.release()
             if len(other_bc) > len(self.blockchain) and other_bc[0].block.issr_pub_key == self.blockchain[0].block.issr_pub_key:
-                coins_from_issuer, coins_from_voter = self.verify_blockchain(other_bc)
+                coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
                 if coins_from_issuer is None:
                     self.lock.release()
                     return False
@@ -424,7 +226,7 @@ class ProcessNode(object):
             #         self.add_transactin(transation) if valid
             self.blockchain.append(newblock)
             # update the metadata
-            self.update_metadata(newblock, self.blockchain, self.cur_coins_from_issuer, self.cur_coins_from_voter)
+            putil.update_metadata(newblock, self.blockchain, self.cur_coins_from_issuer, self.cur_coins_from_voter)
             self.lock.release()
             return True
 
@@ -511,12 +313,12 @@ class ProcessNode(object):
                 logic_block = self.blockchain[cur]
                 #check transactions
                 for transaction in logic_block.transactions:
-                    if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter, [], self.blockchain)):
+                    if not putil.valid_transaction(transaction, self.blockchain, coins_from_issuer, []):
                         group.remove(k-cur)
                         return False
                 #check block.roothash
                 tmp_MerkleTree = MerkleTree(logic_block.transactions)
-                if(tmp_MerkleTree.get_hash!=logic_block.block.root_hash):
+                if tmp_MerkleTree.get_hash() != logic_block.block.root_hash:
                     group.remove(k-cur)
                     return False
             
@@ -645,7 +447,7 @@ class ProcessNode(object):
         to_remove = []
         self.mining_transactions = []
         for transaction in self.pending_transactions:
-            if self.verify_transaction(transaction, self.cur_coins_from_issuer, self.cur_coins_from_voter, self.mining_transactions, self.blockchain):
+            if putil.valid_transaction(transaction, self.blockchain, self.cur_coins_from_issuer, self.mining_transactions):
                 self.mining_transactions.append(transaction)
             to_remove.append(transaction)
             if len(self.mining_transactions) == self.transactions_per_block:
