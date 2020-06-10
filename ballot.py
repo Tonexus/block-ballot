@@ -11,6 +11,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from random import sample 
 import time
+
 from transaction import Transaction
 from block import LogicalBlock
 
