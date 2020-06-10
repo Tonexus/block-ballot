@@ -14,12 +14,12 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 config = {}
 config['issuer_address'] = 'http://localhost:12345/ISSUER'
 # config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
-config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR"]
+config['node_addresses'] = ["http://localhost:30001/PROCESSOR"]
 
 
 issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
 processor = xmlrpc.client.ServerProxy(config['node_addresses'][0], allow_none=True)
-processor2 = xmlrpc.client.ServerProxy(config['node_addresses'][1], allow_none=True)
+# processor2 = xmlrpc.client.ServerProxy(config['node_addresses'][1], allow_none=True)
 # print(len(pickle.loads(processor.get_blockchain().data)))
 # print(len(pickle.loads(processor2.get_blockchain().data)))
 # exit()
@@ -54,7 +54,6 @@ print("My Balance is: ", ballots[1].tally())
 print("My Balance is: ", ballots[2].tally())
 print("My Balance is: ", ballots[3].tally())
 # print("The blockchain is valid?: ", b.get_blockchain())
-exit()
 print("About to vote for someone")
 print("Vote is: ", ballots[0].vote(ballots[2].public))
 print("Vote is: ", ballots[1].vote(ballots[2].public))

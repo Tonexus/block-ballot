@@ -408,7 +408,7 @@ class Issuer(Wallet):
         b_id = 1
         for block in longest_bc[1:]:
             t_id = 0
-            for transaction in block.transactions[1:]:
+            for transaction in block.transactions:
                 if transaction.dst_pub_key not in balances:
                     balances[transaction.dst_pub_key] = {'transaction_ids': [], 'balance': 0}
                 balances[transaction.dst_pub_key]['balance'] += 1
@@ -420,7 +420,7 @@ class Issuer(Wallet):
         b_id = 1
         for block in longest_bc[1:]:
             t_id = 0
-            for transaction in block.transactions[1:]:
+            for transaction in block.transactions:
                 (b, t) = transaction.src_transact_id
                 balances[transactions_to_keys[b][t]]['balance'] -= 1
                 # if (b, t) == (0, 0):
