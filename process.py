@@ -33,7 +33,7 @@ class ProcessNode(object):
         # wallet metadata on blockchain
         self.cur_coins_from_issuer = {}
         self.cur_coins_from_voter = {}
-
+        print('My id is: ', node_id)
         self.id = node_id
 
         self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
@@ -156,35 +156,32 @@ class ProcessNode(object):
     def add_block(self, newblock, id):  
         #lock here
         self.lock.acquire()
+        print('Inside add_block and my id is: ', self.id, ': The id that called this is: ', id)
         if id != self.id:
             newblock = pickle.loads(newblock.data)
+            print(newblock)
+            # print(pickle.loads(newblock))
         print("Length of self.blockchain: ", len(self.blockchain))
         if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
-            # The block is not valid
-            print('Shoudlnt happen since block is valid')
-            # recovery on ourselves if we don't have the longest blockchain
-            # for node in nodes:
-            #     get the longest blockchain
-            # if valid then make that ours
             if id == self.id:
-                print('ID was my own id inside add_block')
+                print('The block was not valid and we called it on ourselves.')
                 self.lock.release()
                 return False
+            print('The block was not valid and someone else called it on us.')
+
             # get their blockchain
             # if theirs is longer then verify and set to ours
             # else i don't care if theyre behind
             # self.nodes_lock.acquire()
-            print('About to make rpc object')
+            print('The other guy"s address is:', self.node_addresses[id])
             rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[id], allow_none=True)
-            print('About to call get_blockchain')
-
             other_bc = pickle.loads(rpc_obj.get_blockchain().data)
-            print('Called get_blockchain')
-
+            print('Get blockchain has returned')
             # self.nodes_lock.release()
             if len(other_bc) > len(self.blockchain) and other_bc[0].block.issr_pub_key == self.blockchain[0].block.issr_pub_key:
                 coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
                 if coins_from_issuer is None:
+                    print('Other persons blockchain was not valid')
                     self.lock.release()
                     return False
                 else:
@@ -206,7 +203,10 @@ class ProcessNode(object):
                 # we called add_block on ourselves
                 # probabl;y do nothing else
             # readd mining_transactions to pending maybe
-            print('Valid block received')
+            if id == self.id:
+                print('Valid block received from ourselves')
+            else:
+                print('Valid block recieved from someone else')
             if self.is_mining and id is not self.id:
                 print('Recieved valid block from somone else. ID = ', id)
                 self.recieved_new_block = True
@@ -232,19 +232,14 @@ class ProcessNode(object):
 
     def RPC_add_block(self, newblock):
         # self.nodes_lock.acquire()
+        newblock = pickle.dumps(newblock)
         for i in range(len(self.node_addresses)):
             if i == self.id:
                 continue
             rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
-            # if node is None:
-                # print('Continueing in RPC add block')
-                # continue
-            # print('Didn;t coninue in rpc add block', newblock)
-            newblock = pickle.dumps(newblock)
-            rpc_obj.add_block(newblock, self.id)
+            ret = rpc_obj.add_block(newblock, self.id)
             # t1 = threading.Thread(target=node.add_block,args=(newblock, self.id))
             # t1.start()
-        # self.nodes_lock.release()
 
     def get_blockchain(self):
         print('Get blockchain called')
@@ -490,15 +485,15 @@ class ProcessNode(object):
                 # set miningtransactios to empty list
                 # acquire lock
                 # other.add_block()
-                if not self.add_block(newblock,self.id):
+                if not self.add_block(newblock, self.id):
                     self.lock.acquire()
                     self.pending_transactions = self.mining_transactions[1:] + self.pending_transactions
                     self.mining_transactions = []
                     self.lock.release()
                     break
-                # print("About to call rpc add block")
+                print("About to call rpc add block", newblock)
                 self.RPC_add_block(newblock)
-                # print("After RPC add block")
+                print("After RPC add block")
                 self.interrupt_mining = 1
                 self.mining_transactions = []
                 break 

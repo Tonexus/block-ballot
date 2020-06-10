@@ -73,17 +73,14 @@ def valid_block(newblock, blockchain, coins_from_issuer):
         print("The first block is not a genesis block", type(newblock), type(newblock.block))
         return False
 
-    print("foo")
     # check if hash matches previous block
     if newblock.prev_block_hash != blockchain[-1].block.to_hash():
         return False
 
-    print("bar")
     # check number of transactions
     if len(newblock.transactions) != blockchain[0].block.block_size:
         return False
 
-    print("baz")
     # check each transaction, except the mining transaction
     block_transactions = newblock.transactions[0:1]
     for transaction in newblock.transactions[1:]:
@@ -106,14 +103,16 @@ def valid_blockchain(blockchain):
     # initialize metadata
     coins_from_issuer = {}
     coins_from_voter = {}
-    blockchain = []
+    if not isinstance(blockchain[0].block, GenesisBlock):
+        return None, None
+    new_blockchain = [blockchain[0]]
     # check blockchain block by block
-    for logic_block in blockchain:
+    for logic_block in blockchain[1:]:
         # check if each block is valid for appending, given the metadata
-        if valid_block(logic_block, blockchain, coins_from_issuer):
+        if valid_block(logic_block, new_blockchain, coins_from_issuer):
             # add block and update metadata
-            blockchain.append(logic_block)
-            update_metadata(logic_block, blockchain, coins_from_issuer, coins_from_voter)
+            new_blockchain.append(logic_block)
+            update_metadata(logic_block, new_blockchain, coins_from_issuer, coins_from_voter)
         else:
             return None, None
 

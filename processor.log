@@ -381,3 +381,71 @@ Traceback (most recent call last):
   File "/Users/cgraves/Git/github/block-ballot/process.py", line 323, in add_transaction
     self.lock.acquire()
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 163, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 163, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 163, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 164, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 164, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 162, in add_block
+    print(pickle.loads(newblock))
+TypeError: a bytes-like object is required, not 'LogicalBlock'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 162, in add_block
+    print(pickle.loads(newblock))
+TypeError: a bytes-like object is required, not 'LogicalBlock'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 165, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'
+Traceback (most recent call last):
+  File "/Users/cgraves/Git/github/block-ballot/server.py", line 44, in _dispatch
+    return method_to_call(*params)
+  File "/Users/cgraves/Git/github/block-ballot/process.py", line 165, in add_block
+    if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
+  File "/Users/cgraves/Git/github/block-ballot/putil.py", line 77, in valid_block
+    if newblock.prev_block_hash != blockchain[-1].block.to_hash():
+AttributeError: 'bytes' object has no attribute 'prev_block_hash'

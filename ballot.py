@@ -65,6 +65,15 @@ class Wallet:
         for node_address in node_addresses:
             self.nodes.append(xmlrpc.client.ServerProxy(node_address, allow_none=True))
 
+
+    def set_nodes(self, node_addresses):
+        node_addresses = pickle.loads(node_addresses.data)
+        self.node_addresses = node_addresses
+        self.nodes = []
+        for node_address in node_addresses:
+            self.nodes.append(xmlrpc.client.ServerProxy(node_address, allow_none=True))
+
+
     def pick_nodes(self):
         """ Function to pick subset of nodes to send transactions to
         Right not picking random subset of the nodes"""
@@ -85,14 +94,14 @@ class Wallet:
         # Need to set the source transaction first
         # Need to pick some nodes to send the transaction to
         nodes = self.pick_nodes()
-        print("Inside make transaction", public_key)
+        # print("Inside make transaction", public_key)
         # Make the transaction from self to the other public address
         # store source transaction info inside the wallet
         # for the Issuer is special issuer transaction
         # For the regular voter is the results of registering to vote
         if self.source_transaction_id is None and self.transaction_hash is not None:
             # Find my source transaction id
-            print('My source transaction id was none')
+            # print('My source transaction id was none')
             longest_bc = []
             for node in nodes:
                 bc = node.get_blockchain()
@@ -100,12 +109,12 @@ class Wallet:
                 if len(bc) > len(longest_bc):
                     longest_bc = bc
             # find new transaction in the blockchain
-            print(len(longest_bc))
+            # print(len(longest_bc))
             i = len(longest_bc) - 1
             for block in reversed(longest_bc[1:]):
 
                 # loop through transactions in the block?
-                print("Inside the for loop inside make_transaction: ", block)
+                # print("Inside the for loop inside make_transaction: ", block)
                 j = 0
                 for transaction_bc in block.transactions:
                     if self.transaction_hash == transaction_bc.to_hash(): # check src_transaction.public_key?
@@ -116,22 +125,22 @@ class Wallet:
                 if self.source_transaction_id is not None:
                     break
                 i-=1
-        print(self.source_transaction_id, self.transaction_hash)
+        # print(self.source_transaction_id, self.transaction_hash)
         if self.source_transaction_id is None:
             return None, None, self.transaction_hash
         transaction = Transaction(self.source_transaction_id, public_key, self.source_transaction_data, self.private)
         self.transaction_hash = transaction.to_hash()
         for tries in range(MAX_TRIES):
-            print("After make transaction")
+            # print("After make transaction")
             test = pickle.dumps(transaction)
-            print("After pickling")
+            # print("After pickling")
             for node in nodes:
-                print("About to call add transaction")
+                # print("About to call add transaction")
                 ret = node.add_transaction(pickle.dumps(transaction), tries)
-                print("Added to the node")
+                # print("Added to the node")
                 if ret == False:
                     return None, None, self.transaction_hash
-            print("Got to the timeout")
+            # print("Got to the timeout")
             time.sleep(TIMEOUT)
             longest_bc = []
             for node in nodes:
@@ -140,12 +149,12 @@ class Wallet:
                 if len(bc) > len(longest_bc):
                     longest_bc = bc
             # find new transaction in the blockchain
-            print(len(longest_bc))
+            # print(len(longest_bc))
             i = len(longest_bc) - 1
             for block in reversed(longest_bc[1:]):
 
                 # loop through transactions in the block?
-                print("Inside the for loop inside make_transaction: ", block)
+                # print("Inside the for loop inside make_transaction: ", block)
                 j = 0
                 for transaction_bc in block.transactions:
                     if transaction.to_hash() == transaction_bc.to_hash(): # check src_transaction.public_key?
@@ -288,7 +297,6 @@ class Ballot(Wallet):
         if self.registered or self.check_balance(self.public):
             return True
         self.registered = True
-        print("Calling register")
         public_key_hex = self.public.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -373,12 +381,12 @@ class Issuer(Wallet):
         """ Gives the public key a coin on the chain
         Public key comes in as hex form
         """
-        print("Inside here, ", public_key)
+        # print("Inside here, ", public_key)
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
         self.voters.append(public_key)
         (s_id, s_data, t_hash) = self.make_transaction(public_key)
-        print("After unpacking the ")
+        # print("After unpacking the ")
         return pickle.dumps((s_id, s_data, t_hash, self.public_hex))
 
     def list_registered_voters(self):
