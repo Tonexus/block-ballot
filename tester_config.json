@@ -1,0 +1,24 @@
+{
+	"issuer_config": {"num_zeros": 4, "transactions_per_block": 3},
+	"processor_config": {
+		"initblockchain" : "None",
+		"voters_map" : {}, 
+		"config": {
+			"issuer_address": "http://localhost:12345/ISSUER"
+		}
+	},
+	"nodes": [
+        "http://localhost:30001/PROCESSOR",
+        "http://localhost:30002/PROCESSOR",
+        "http://localhost:30003/PROCESSOR",
+        "http://localhost:30004/PROCESSOR",
+        "http://localhost:30005/PROCESSOR",
+        "http://localhost:30006/PROCESSOR",
+        "http://localhost:30007/PROCESSOR",
+        "http://localhost:30008/PROCESSOR",
+        "http://localhost:30009/PROCESSOR",
+        "http://localhost:30010/PROCESSOR"
+    ],
+	"node_ports": [30001]
+
+}
