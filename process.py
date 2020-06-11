@@ -69,7 +69,6 @@ class ProcessNode(object):
         return self.voters_map[id]
 
     def set_genesis(self, public_key, num_zeros, num_transactions):
-        # print("Set genesis called")
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
         self.genesis_block = GenesisBlock(public_key, "", num_zeros, DEFAULT_TRANSACTIONS_PER_BLOCK + 1)
