@@ -468,7 +468,7 @@ class ProcessNode(object):
             return False        
 
     def getnext(self,nonce):
-        return nonce+1
+        return nonce + 1 % (1 << 32)
     def check_hash(self, hash):
         #pre 0
         num_zeros = int(self.blockchain[0].block.num_zeros)
@@ -480,7 +480,7 @@ class ProcessNode(object):
         # self.recieved_new_block
         self.lock.acquire()
         self.is_mining = True
-        nonce = random.randint(0, 1000000)
+        nonce = random.randint(0, 1 << 32)
         pre_hash = self.blockchain[-1].block.to_hash()
         # print("About to make block in mining")
         reward_transaction = Transaction((0,1), self.public, None, self.private)
