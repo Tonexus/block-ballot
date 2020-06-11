@@ -34,8 +34,10 @@ def print_processor_wallets(issuer, ballots):
 		if balances[pk] is not None:
 			print('--- Issuer/Processor balance is --- ', balances[pk]['balance'])
 
-
-print(issuer.start_election())
+try:
+	print(issuer.start_election())
+except:
+	print('The Issuer is not up')
 ballots = []
 for i in range(12):
 	ballots.append(Ballot(config))

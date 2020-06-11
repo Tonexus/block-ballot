@@ -65,7 +65,6 @@ class Wallet:
         for node_address in node_addresses:
             self.nodes.append(xmlrpc.client.ServerProxy(node_address, allow_none=True))
 
-
     def set_nodes(self, node_addresses):
         node_addresses = pickle.loads(node_addresses.data)
         self.node_addresses = node_addresses
@@ -104,8 +103,11 @@ class Wallet:
             # print('My source transaction id was none')
             longest_bc = []
             for node in nodes:
-                bc = node.get_blockchain()
-                bc = pickle.loads(bc.data)
+                try:
+                    bc = node.get_blockchain()
+                    bc = pickle.loads(bc.data)
+                except:
+                    bc = []
                 if len(bc) > len(longest_bc):
                     longest_bc = bc
             # find new transaction in the blockchain
@@ -136,7 +138,11 @@ class Wallet:
             # print("After pickling")
             for node in nodes:
                 # print("About to call add transaction")
-                ret = node.add_transaction(pickle.dumps(transaction), tries)
+
+                try:
+                    ret = node.add_transaction(pickle.dumps(transaction), tries)
+                except:
+                    ret = True
                 # print("Added to the node")
                 if ret == False:
                     return None, None, self.transaction_hash
@@ -144,8 +150,11 @@ class Wallet:
             time.sleep(TIMEOUT)
             longest_bc = []
             for node in nodes:
-                bc = node.get_blockchain()
-                bc = pickle.loads(bc.data)
+                try:
+                    bc = node.get_blockchain()
+                    bc = pickle.loads(bc.data)
+                except:
+                    bc = []
                 if len(bc) > len(longest_bc):
                     longest_bc = bc
             # find new transaction in the blockchain
@@ -168,8 +177,11 @@ class Wallet:
         nodes = self.pick_nodes()
         longest_bc = []
         for node in nodes:
-            bc = node.get_blockchain()
-            bc = pickle.loads(bc.data)
+            try:
+                bc = node.get_blockchain()
+                bc = pickle.loads(bc.data)
+            except:
+                bc = []
             if len(bc) > len(longest_bc):
                 longest_bc = bc
         if self.verify_blockchain(longest_bc):
@@ -251,8 +263,11 @@ class Wallet:
         nodes = self.pick_nodes()
         longest_bc = []
         for node in nodes:
-            bc = node.get_blockchain()
-            bc = pickle.loads(bc.data)
+            try:
+                bc = node.get_blockchain()
+                bc = pickle.loads(bc.data)
+            except:
+                bc = []
             if len(bc) > len(longest_bc):
                 longest_bc = bc
         balance = 0
@@ -374,7 +389,10 @@ class Issuer(Wallet):
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         ).hex()
         for node in self.nodes:
-            node.set_genesis(public_key_hex, self.num_zeros, self.transactions_per_block)
+            try:
+                node.set_genesis(public_key_hex, self.num_zeros, self.transactions_per_block)
+            except:
+                pass
         return True
 
     def register(self, public_key):
@@ -385,7 +403,10 @@ class Issuer(Wallet):
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
         self.voters.append(public_key)
-        (s_id, s_data, t_hash) = self.make_transaction(public_key)
+        try:
+            (s_id, s_data, t_hash) = self.make_transaction(public_key)
+        except:
+            (s_id, s_data, t_hash) = None, None, self.transaction_hash
         # print("After unpacking the ")
         return pickle.dumps((s_id, s_data, t_hash, self.public_hex))
 
@@ -408,8 +429,11 @@ class Issuer(Wallet):
         nodes = self.pick_nodes()
         longest_bc = []
         for node in nodes:
-            bc = node.get_blockchain()
-            bc = pickle.loads(bc.data)
+            try:
+                bc = node.get_blockchain()
+                bc = pickle.loads(bc.data)
+            except:
+                bc = []
             if len(bc) > len(longest_bc):
                 longest_bc = bc
         balances = {public_key: {'transaction_ids': [], 'balance': 0}}
