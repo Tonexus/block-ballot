@@ -189,62 +189,6 @@ class Wallet:
             return longest_bc
         return []
 
-
-    def verify_blockchain(self,blockchain):
-        """ check length """
-        #check pointers
-        for i in range(1,len(blockchain)):
-            if(blockchain[i].prev_block_hash!=blockchain[i-1].block.to_hash()):
-                print("Pointers did not check out")
-                return False
-
-        coins_from_issuer={}
-        coins_from_voter={}
-        self.genesis_block = blockchain[0].block
-        if self.genesis_block.issr_pub_key != self.issuer_public_hex:
-            print("Genesis Block is different")
-            return False
-        self.blockchain = blockchain
-        for logic_block in blockchain[1:]:
-            #check transactions
-            for transaction in logic_block.transactions:
-                if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
-                    print("Not a valid transaction")
-                    return False
-            #check block.roothash
-            tmp_MerkleTree = MerkleTree(logic_block.transactions)
-            if(tmp_MerkleTree.get_hash!=logic_block.block.root_hash):
-                print("Root hashes are not the same")
-                return False
-        return True  
-
-    def verify_transaction(self, transaction, coins_from_issuer, coins_from_voter):
-        (block_id, transaction_id) = transaction.src_transact_id
-        if block_id == 0:
-            src_str = self.genesis_block.issr_pub_key
-            pk_bytes = bytes.fromhex(src_str)
-            src = load_pem_public_key(pk_bytes, backend=default_backend())
-        else:
-            src_str = self.blockchain[block_id].get_transaction(transaction_id).dst_pub_key
-            pk_bytes = bytes.fromhex(src_str)
-            src = load_pem_public_key(pk_bytes, backend=default_backend())
-
-        dst = transaction.dst_pub_key
-
-        if(not transaction.verify(src)):
-            return False
-
-        if(src_str != self.genesis_block.issr_pub_key):
-            if coins_from_issuer[src_str] == 0:
-                return False
-        else:
-            if dst not in coins_from_issuer:
-                return True
-            else:
-                return False
-        return True
-
-
     def check_balance(self, public_key):
         """ Retrieves the balance in a public key on the chain
 
