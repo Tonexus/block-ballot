@@ -22,10 +22,14 @@ Config file json
 
 }
 
-issuer_config - dict sent to the issuer on start up. Currently not used in Issuer
+issuer_config - dict sent to the issuer on start up. Currently number of zeros for POW and transactions per block.
 processor_config - contains the issuer address and an initblockchain. Currently will not change
 Can have either of the below
 nodes - list of nodes used if node_ports not set
 node_ports - list of ports for the processors to be listening to to generate nodes list all on localhost
 
-Above is all used in the script test.sh along with run_issuer.py and run_processor.py files
+Above is all used in the script setup.sh along with run_issuer.py and run_processor.py files
+
+To kill all the processes locally use ./kill.sh
+
+All Errors and regular print output go to their files in logs. It is just a running total.
