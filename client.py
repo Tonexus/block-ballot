@@ -34,8 +34,10 @@ def print_processor_wallets(issuer, ballots):
 		if balances[pk] is not None:
 			print('--- Issuer/Processor balance is --- ', balances[pk]['balance'])
 
-
-print(issuer.start_election())
+try:
+	print(issuer.start_election())
+except:
+	print('The Issuer is not up')
 ballots = []
 for i in range(12):
 	ballots.append(Ballot(config))
@@ -59,6 +61,7 @@ print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
 print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
 print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
 
+print(len(ballots[0].get_blockchain()))
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
