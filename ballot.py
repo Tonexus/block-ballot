@@ -1,6 +1,7 @@
 import xmlrpc.client
 import pickle
 import logging
+import putil
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -184,9 +185,7 @@ class Wallet:
                 bc = []
             if len(bc) > len(longest_bc):
                 longest_bc = bc
-        if self.verify_blockchain(longest_bc):
-            self.blockchain = []
-            self.genesis_block = None
+        if putil.valid_blockchain(longest_bc):
             return longest_bc
         return []
 
