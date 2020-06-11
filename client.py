@@ -15,22 +15,27 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 config = {}
 config['issuer_address'] = 'http://localhost:12345/ISSUER'
-# config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
 config['node_addresses'] = ["http://localhost:30001/PROCESSOR", "http://localhost:30002/PROCESSOR", "http://localhost:30003/PROCESSOR"]
 
 
 issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
 processor = xmlrpc.client.ServerProxy(config['node_addresses'][0], allow_none=True)
 processor2 = xmlrpc.client.ServerProxy("http://localhost:30002/PROCESSOR", allow_none=True)
-# processor2 = xmlrpc.client.ServerProxy(config['node_addresses'][1], allow_none=True)
-# print(len(pickle.loads(processor.get_blockchain().data)))
-# print(len(pickle.loads(processor2.get_blockchain().data)))
-# exit()
-# processor.add_block(None)
+
+
+def print_processor_wallets(issuer, ballots):
+	balances = issuer.get_winner()
+	print('Balances of voters')
+	for ballot in ballots:
+		print('--- Voter balance is --- ', balances[ballot.public_hex]['balance'])
+		balances[ballot.public_hex] = None
+	print('Balances of processors and Issuer')
+	for pk in balances:
+		if balances[pk] is not None:
+			print('--- Issuer/Processor balance is --- ', balances[pk]['balance'])
 
 
 print(issuer.start_election())
-# issuer.set_nodes(pickle.dumps(['http://localhost:30001/PROCESSOR']))
 ballots = []
 for i in range(12):
 	ballots.append(Ballot(config))
@@ -40,55 +45,11 @@ print("---------- About to check balance -----------")
 for i in range(12):
 	print('My balance is: ', ballots[i].tally())
 
-issuer.set_nodes(pickle.dumps(['http://localhost:30001/PROCESSOR']))
+for node_address in config['node_addresses']:
+	issuer.set_nodes(pickle.dumps([node_address]))
+	print_processor_wallets(issuer, ballots)
+issuer.set_nodes(pickle.dumps(config['node_addresses']))
 
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-bc = pickle.loads(processor.get_blockchain().data)
-if putil.valid_blockchain(bc)[1] is None:
-	exit()
-print('PUtils Call to valid blockchain on the first node: ', len(bc))
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
-
-issuer.set_nodes(pickle.dumps(['http://localhost:30002/PROCESSOR']))
-bc = pickle.loads(processor2.get_blockchain().data)
-if putil.valid_blockchain(bc)[1] is None:
-	exit()
-print('PUtils Call to valid blockchain on the second node: ', len(bc))
-
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
-
-issuer.set_nodes(pickle.dumps(['http://localhost:30003/PROCESSOR']))
-bc = pickle.loads(processor2.get_blockchain().data)
-if putil.valid_blockchain(bc)[1] is None:
-	exit()
-print('PUtils Call to valid blockchain on the second node: ', len(bc))
-
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
-
-issuer.set_nodes(pickle.dumps(['http://localhost:30001/PROCESSOR', 'http://localhost:30002/PROCESSOR', 'http://localhost:30002/PROCESSOR']))
 print("About to vote for someone")
 print("0 Votes for 2: ", ballots[0].vote(ballots[2].public))
 print("1 Votes for 2: ", ballots[1].vote(ballots[2].public))
@@ -99,46 +60,7 @@ print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
 print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
 
 
-issuer.set_nodes(pickle.dumps(['http://localhost:30001/PROCESSOR']))
-
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-bc = pickle.loads(processor.get_blockchain().data)
-print('PUtils Call to valid blockchain on the first node: ', putil.valid_blockchain(bc)[1], len(bc))
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
-
-issuer.set_nodes(pickle.dumps(['http://localhost:30002/PROCESSOR']))
-bc = pickle.loads(processor2.get_blockchain().data)
-print('PUtils Call to valid blockchain on the second node: ', putil.valid_blockchain(bc)[1], len(bc))
-
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
-
-issuer.set_nodes(pickle.dumps(['http://localhost:30003/PROCESSOR']))
-bc = pickle.loads(processor2.get_blockchain().data)
-if putil.valid_blockchain(bc)[1] is None:
-	exit()
-print('PUtils Call to valid blockchain on the second node: ', len(bc))
-
-balances = issuer.get_winner()
-for ballot in ballots:
-	print('--- balance is --- ', balances[ballot.public_hex]['balance'])
-	balances[ballot.public_hex] = None
-
-print('Balances of processors and Issuer')
-for pk in balances:
-	if balances[pk] is not None:
-		print('--- balance is --- ', balances[pk]['balance'])
+for node_address in config['node_addresses']:
+	issuer.set_nodes(pickle.dumps([node_address]))
+	print_processor_wallets(issuer, ballots)
+issuer.set_nodes(pickle.dumps(config['node_addresses']))

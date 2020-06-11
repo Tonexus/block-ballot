@@ -44,7 +44,7 @@ class RequestHandlerProcessor(SimpleXMLRPCRequestHandler):
             return method_to_call(*params)
         except:
             import traceback
-            File_object = open(r"processor.log", "a")
+            File_object = open(r"logs/processor.log", "a")
             traceback.print_exc(file=File_object)
             raise
 

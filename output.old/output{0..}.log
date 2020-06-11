@@ -1,0 +1,7 @@
+My id is:  0
+Set config file to config.json
+Set the id to {0..}
+Traceback (most recent call last):
+  File "run_processor.py", line 39, in <module>
+    m = re.search(p,config['nodes'][int(args.id)])
+ValueError: invalid literal for int() with base 10: '{0..}'
