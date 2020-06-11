@@ -10,6 +10,17 @@ from ballot import Ballot
 
 import putil
 
+def print_processor_wallets(issuer, keys):
+	balances = issuer.get_winner()
+	print('Balances of voters')
+	for key in keys:
+		print('--- Voter balance is --- ', balances.get(key, {}).get('balance', 404))
+		balances[key] = None
+	print('Balances of processors and Issuer')
+	for pk in balances:
+		if balances[pk] is not None:
+			print('--- Issuer/Processor balance is --- ', balances[pk]['balance'])
+
 def client(config, voter_keys, index):
     ballots = []
     for i in range(12):
@@ -77,10 +88,9 @@ if __name__ == "__main__":
 
         balances = issuer.get_winner()
 
-        print('Voter balances, including balances:')
-        for key in voter_keys:
-            if balances[key] is not None:
-                print('\t--- balance is --- ', balances[key]['balance'])
+        processor = xmlrpc.client.ServerProxy(config['node_addresses'][0], allow_none=True)
+        print("Length blockchain: {}".format(len(pickle.loads(processor.get_blockchain().data))))
+        print_processor_wallets(issuer, voter_keys)
     finally:
         # clean up processes if error
         for proc in procs:

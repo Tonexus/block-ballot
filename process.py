@@ -1,6 +1,7 @@
 import xmlrpc.client
 import threading
 import pickle
+import random
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -479,7 +480,7 @@ class ProcessNode(object):
         # self.recieved_new_block
         self.lock.acquire()
         self.is_mining = True
-        nonce = 0
+        nonce = random.randint(0, 1000000)
         pre_hash = self.blockchain[-1].block.to_hash()
         # print("About to make block in mining")
         reward_transaction = Transaction((0,1), self.public, None, self.private)
