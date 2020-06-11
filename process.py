@@ -102,10 +102,13 @@ class ProcessNode(object):
     def update_blockchain(self, blockchain, id):
         #lock here
         self.lock.acquire()
-        if putil.valid_blockchain(blockchain):
+
+        dic1, dic2 = putil.valid_blockchain(blockchain)
+        if dic1 is not None and dic2 is not None:
             self.interrupt_mining=1
             self.blockchain = blockchain
-            self.cur_coins_from_issuer = {}
+            self.cur_coins_from_issuer = dic1
+            self.cur_coins_from_voter = dic2
             self.lock.release()
         else:
             self.lock.release()
@@ -250,7 +253,10 @@ class ProcessNode(object):
         return len(self.blockchain), self.blockchain[len(self.blockchain)-1].block.to_hash()
     
     def get_block_headers(self):
-        return self.blockheaders
+        blockheaders = []
+        for logicalblock in self.blockchain:
+            blockheaders.append(logicalblock.block)
+        return blockheaders
 
     def verfity_blockheaders(self,blockheaders):
         for i in range(1,len(blockheaders)):
@@ -262,22 +268,29 @@ class ProcessNode(object):
         return self.blockchain[bid]
 
     #download and update one block
-    def RPC_get_block(self, bid, nid):
-        self.blockchain[bid] = self.nodes[nid].get_block(bid)
+    def RPC_get_block(self, bid, node):
+        self.blockchain[bid] = node.get_block(bid)
 
     #choose a group of nodes with same len and hash
     #download headers and verify
     #download blocks parellel and verify at the same time
     #if fail, retry
     def headers_first_DL(self, group, len_bc):
+
+        nodes = []
+        for i in range(len(self.node_addresses)):
+            if i == self.id:
+                continue
+            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
+            nodes.append(rpc_obj)
+        
         self.blockheaders = []
         
         flag = 0
         for id in group:
-            blockheaders = self.nodes[id].get_block_headers()
+            blockheaders = nodes[id].get_block_headers()
             if(self.verfity_blockheaders(blockheaders)):
                 flag = 1
-                break
             else:
                 group.remove(id)
 
@@ -289,35 +302,43 @@ class ProcessNode(object):
         coins_from_voter={}
         len_gp = len(group)
 
-        cur = 1
+        #cur = 1
+
+        t = []
         for i in range(0,len_bc,len_gp):
             for j in range(len_gp):
                 if(i+j>=len_bc):
                     break
-                t1 = threading.Thread(self.get_block,(i,group[j]))
-                t1.start()
+                t[j] = threading.Thread(self.RPC_get_block,(i,nodes[group[j]]))
+                t[j].start()
 
-            end = min(i+j, len_bc)
+            for j in range(len_gp):
+                t[j].join()
+
+            end = min(i+len_gp, len_bc)
             #check pointers
-            for k in range(cur, end):
-                if(self.blockchain[k].prev_block_hash!=self.blockchain[k-1].block.to_hash()):
-                    group.remove(k-cur)
+            for k in range(i, end):
+                if(k==0):
+                    if not isinstance(self.blockchain[0].block, GenesisBlock):
+                        group.remove(group[k-i])
+                        return False
+                if(k!=0 and self.blockchain[k].prev_block_hash!=self.blockchain[k-1].block.to_hash()):
+                    group.remove(group[k-i])
                     return False
 
-            for k in range(cur, end):
-                logic_block = self.blockchain[cur]
-                #check transactions
-                for transaction in logic_block.transactions:
-                    if not putil.valid_transaction(transaction, self.blockchain, coins_from_issuer, []):
-                        group.remove(k-cur)
-                        return False
-                #check block.roothash
-                tmp_MerkleTree = MerkleTree(logic_block.transactions)
-                if tmp_MerkleTree.get_hash() != logic_block.block.root_hash:
-                    group.remove(k-cur)
+            for k in range(i, end):
+                logic_block = self.blockchain[k]
+                #check blocks
+                if not putil.valid_block(logic_block, self.blockchain[:k], coins_from_issuer):
+                    group.remove(k-i)
                     return False
-            
-            cur = cur+len_gp
+                else:
+                    putil.update_metadata(logic_block, self.blockchain[:k], coins_from_issuer, coins_from_voter)
+                #check block.roothash
+                # tmp_MerkleTree = MerkleTree(logic_block.transactions)
+                # if tmp_MerkleTree.get_hash() != logic_block.block.root_hash:
+                #     group.remove(k-i)
+                #     return False
 
         # self.coins_from_issuer = coins_from_issuer
         # self.coins_from_voter = coins_from_voter
@@ -332,12 +353,21 @@ class ProcessNode(object):
     #download the blockchain from a group of nodes in parellel
     #choose from the group with largest len, if fails, choose next group
     def RPC_get_blockchain(self):
+
+        self.lock.acquire()
+        nodes = []
+        for i in range(len(self.node_addresses)):
+            if i == self.id:
+                continue
+            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
+            nodes.append(rpc_obj)
+
         len_hash_map = {}
         len_hash_list = []
-        for i in range(len(self.nodes)):
-            t_len, t_hash = self.nodes[i].get_len_hash()
+        for i in range(len(nodes)):
+            t_len, t_hash = nodes[i].get_len_hash()
             key = str(t_len)+"::"+str(t_hash)
-            if(len_hash_map[key]==None):
+            if(key not in len_hash_map):
                 len_hash_map[key] = []
             len_hash_map[key].append(i)
 
@@ -348,15 +378,17 @@ class ProcessNode(object):
         len_hash_list.sort(reverse=True, key=lambda x:x[0]) 
 
         for group_key in len_hash_list:
-            if(int(group_key[0])<=len(self.blockchain)):
+            if(self.blockchain is not None and int(group_key[0])<=len(self.blockchain)):
                 break
             key = group_key[0]+"::"+group_key[1]
             group = len_hash_map[key]
 
             while(len(group)!=0):
                 if(self.headers_first_DL(group, int(group_key[0]))):
+                    self.lock.release()
                     return True
 
+        self.lock.release()
         return False            
 
     def tally(self, public_keys):
@@ -377,7 +409,7 @@ class ProcessNode(object):
 
     #the hash path in Merkle Tree
     def get_hash_path(self, block_id, transaction_id):
-        return self.blockchain[block_id].get_hash_path(transaction_id)
+        return self.blockchain[block_id].tree.get_hash_path(transaction_id)
 
     #return hash of (hash1, hash2)
     def test_hash_path(self, hash1, hash2):
@@ -386,15 +418,32 @@ class ProcessNode(object):
         digest.update(bytes.fromhex(hash2))
         return digest.finalize().hex()
 
+    def get_transaction_position(self, transaction_hash):
+
+        for i in range(len(self.blockchain)):
+            transactions = self.blockchain[i].block.transacitons
+            if transactions is not None:
+                for j in range(len(transactions)):
+                    if(transactions[j].to_hash()==transaction_hash):
+                        return i,j
+
+        return None, None                
+
     #Simplified Payment Verification
     #1.just loadload headers and hash path of the transacton in the Merkle tree
     #2.verify them, if half of the nodes succeed, return True
     def SPV_transaction(self, block_id, transaction_id, transaction_hash):
+        nodes = []
+        for i in range(len(self.node_addresses)):
+            if i == self.id:
+                continue
+            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
+            nodes.append(rpc_obj)
         
         con_cnt = 0
         spv_cnt = 0
         cur_hash  = transaction_hash
-        for node in self.nodes:
+        for node in nodes:
             if(node.check_connection()):
                 con_cnt += 1
 
@@ -413,7 +462,7 @@ class ProcessNode(object):
             else:
                 spv_cnt+=1
 
-        if(spv_cnt*2>con_cnt):
+        if(spv_cnt*2>=con_cnt):
             return True
         else:
             return False        
@@ -426,9 +475,6 @@ class ProcessNode(object):
         if hash[-num_zeros:] == '0'*num_zeros:
             return True
         return False
-
-
-
 
     def mining(self):
         # self.recieved_new_block
