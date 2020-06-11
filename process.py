@@ -119,8 +119,11 @@ class ProcessNode(object):
 
     def RPC_update_blockchain(self):
         for node in self.nodes:
-            t1 = threading.Thread(node.update_blockchain, (self.blockchain, self.id))
-            t1.start()
+            try:
+                t1 = threading.Thread(node.update_blockchain, (self.blockchain, self.id))
+                t1.start()
+            except:
+                pass
 
     #can call by other process nodes or just this node 
     def add_transaction(self, transaction, id):
@@ -152,8 +155,11 @@ class ProcessNode(object):
         
     def RPC_add_transaction(self, transaction):
         for node in self.nodes:
-            t1 = threading.Thread(node.add_transaction,(transaction, self.id))
-            t1.start()
+            try:
+                t1 = threading.Thread(node.add_transaction,(transaction, self.id))
+                t1.start()
+            except:
+                pass
 
     #if the verification fails, let the caller update their with self.blockchain
     def add_block(self, newblock, id):  
@@ -177,8 +183,12 @@ class ProcessNode(object):
             # else i don't care if theyre behind
             # self.nodes_lock.acquire()
             print('The other guy"s address is:', self.node_addresses[id])
-            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[id], allow_none=True)
-            other_bc = pickle.loads(rpc_obj.get_blockchain().data)
+            try:
+                rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[id], allow_none=True)
+                other_bc = pickle.loads(rpc_obj.get_blockchain().data)
+            except:
+                # The other guy didn't respond so ignore
+                return False
             print('Get blockchain has returned')
             # self.nodes_lock.release()
             if len(other_bc) > len(self.blockchain) and other_bc[0].block.issr_pub_key == self.blockchain[0].block.issr_pub_key:
@@ -239,8 +249,11 @@ class ProcessNode(object):
         for i in range(len(self.node_addresses)):
             if i == self.id:
                 continue
-            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
-            ret = rpc_obj.add_block(newblock, self.id)
+            try:
+                rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
+                ret = rpc_obj.add_block(newblock, self.id)
+            except:
+                pass
             # t1 = threading.Thread(target=node.add_block,args=(newblock, self.id))
             # t1.start()
 
@@ -269,7 +282,10 @@ class ProcessNode(object):
 
     #download and update one block
     def RPC_get_block(self, bid, node):
-        self.blockchain[bid] = node.get_block(bid)
+        try:
+            self.blockchain[bid] = node.get_block(bid)
+        except:
+            pass #? TODO
 
     #choose a group of nodes with same len and hash
     #download headers and verify
@@ -365,7 +381,10 @@ class ProcessNode(object):
         len_hash_map = {}
         len_hash_list = []
         for i in range(len(nodes)):
-            t_len, t_hash = nodes[i].get_len_hash()
+            try:
+                t_len, t_hash = nodes[i].get_len_hash()
+            except:
+                continue #?
             key = str(t_len)+"::"+str(t_hash)
             if(key not in len_hash_map):
                 len_hash_map[key] = []
@@ -403,8 +422,11 @@ class ProcessNode(object):
     
     def RPC_check_connection(self):
         for node in self.nodes:
-            if(node.check_connection()):
-                return True
+            try:
+                if(node.check_connection()):
+                    return True
+            except:
+                return False
         return False        
 
     #the hash path in Merkle Tree

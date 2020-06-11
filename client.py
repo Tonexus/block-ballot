@@ -38,6 +38,7 @@ try:
 	print(issuer.start_election())
 except:
 	print('The Issuer is not up')
+	exit()
 ballots = []
 for i in range(12):
 	ballots.append(Ballot(config))
@@ -49,7 +50,10 @@ for i in range(12):
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
-	print_processor_wallets(issuer, ballots)
+	try:
+		print_processor_wallets(issuer, ballots)
+	except:
+		print('Probably a key error')
 issuer.set_nodes(pickle.dumps(config['node_addresses']))
 
 print("About to vote for someone")
@@ -65,5 +69,8 @@ print(len(ballots[0].get_blockchain()))
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
-	print_processor_wallets(issuer, ballots)
+	try:
+		print_processor_wallets(issuer, ballots)
+	except:
+		print('Probably a key error')
 issuer.set_nodes(pickle.dumps(config['node_addresses']))
