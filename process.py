@@ -61,7 +61,19 @@ class ProcessNode(object):
         self.transactions_per_block = DEFAULT_TRANSACTIONS_PER_BLOCK
         self.mining_transactions = []
 
-
+        # try setting blockchain if someone else already online
+        for node in self.nodes:
+            if node is not None:
+                try:
+                    other_bc = node.get_blockchain()
+                    if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].to_hash():
+                        coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
+                        if coins_from_issuer is not None:
+                            self.blockchain = other_bc
+                            self.cur_coins_from_issuer = coins_from_issuer
+                            self.cur_coins_from_voter = coins_from_voter
+                except:
+                    pass
 
     #get a voter's public key
     def get_pkey(self, id):
@@ -181,7 +193,7 @@ class ProcessNode(object):
             other_bc = pickle.loads(rpc_obj.get_blockchain().data)
             print('Get blockchain has returned')
             # self.nodes_lock.release()
-            if len(other_bc) > len(self.blockchain) and other_bc[0].block.issr_pub_key == self.blockchain[0].block.issr_pub_key:
+            if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].block.to_hash():
                 coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
                 if coins_from_issuer is None:
                     print('Other persons blockchain was not valid')

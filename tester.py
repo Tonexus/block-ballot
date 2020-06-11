@@ -63,8 +63,8 @@ if __name__ == "__main__":
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             ))
-        print("Waiting 3 seconds for processes to start")
-        time.sleep(3)
+            print("Waiting 1 second for Processor {} to start".format(i))
+            time.sleep(1)
 
         print(len(procs), " processes online")
 
