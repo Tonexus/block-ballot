@@ -23,9 +23,12 @@ class MerkleTree:
             self.left = MerkleTree(transacts[:self.size//2])
             self.right = MerkleTree(transacts[self.size//2:])
             digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            #print("SS ",digest)
             digest.update(bytes.fromhex(self.left.digest))
             digest.update(bytes.fromhex(self.right.digest))
             self.digest = digest.finalize().hex()
+
+        #print("MKT  :  ",self.size," : ", self.digest)
 
     def get_hash(self):
         """get the hash at the current level"""
@@ -46,12 +49,13 @@ class MerkleTree:
         if i < 0 or i >= self.size:
             return ans
         if(self.size == 1):
+            #ans.append(self.digest)
             return ans
         if (i < self.size // 2):
             ans = self.left.get_hash_path(i)
-            ans.append(self.right.digest)
+            ans.append([0,self.right.digest])
         else:
             ans = self.right.get_hash_path(i - self.size // 2)
-            ans.append(self.left.digest)
+            ans.append([1,self.left.digest])
 
         return ans    

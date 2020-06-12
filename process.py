@@ -2,6 +2,7 @@ import xmlrpc.client
 import threading
 import pickle
 import random
+import time
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -62,18 +63,22 @@ class ProcessNode(object):
         self.mining_transactions = []
 
         # try setting blockchain if someone else already online
-        for node in self.nodes:
-            if node is not None:
-                try:
-                    other_bc = node.get_blockchain()
-                    if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].to_hash():
-                        coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
-                        if coins_from_issuer is not None:
-                            self.blockchain = other_bc
-                            self.cur_coins_from_issuer = coins_from_issuer
-                            self.cur_coins_from_voter = coins_from_voter
-                except:
-                    pass
+        # for node in self.nodes:
+        #     if node is not None:
+        #         try:
+        #             other_bc = node.get_blockchain()
+        #             if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].to_hash():
+        #                 coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
+        #                 if coins_from_issuer is not None:
+        #                     self.blockchain = other_bc
+        #                     self.cur_coins_from_issuer = coins_from_issuer
+        #                     self.cur_coins_from_voter = coins_from_voter
+        #         except:
+        #             pass
+
+        self.RPC_get_blockchain()
+        if(self.blockchain is not None and len(self.blockchain)!=0):
+            print(self.blockchain[-1].block.to_hash())
 
     #get a voter's public key
     def get_pkey(self, id):
@@ -281,7 +286,7 @@ class ProcessNode(object):
         blockheaders = []
         for logicalblock in self.blockchain:
             blockheaders.append(logicalblock.block)
-        return blockheaders
+        return pickle.dumps(blockheaders)
 
     def verfity_blockheaders(self,blockheaders):
         for i in range(1,len(blockheaders)):
@@ -290,13 +295,18 @@ class ProcessNode(object):
         return True
 
     def get_block(self, bid):
-        return self.blockchain[bid]
+        return pickle.dumps(self.blockchain[bid])
 
     #download and update one block
     def RPC_get_block(self, bid, node):
         try:
-            self.blockchain[bid] = node.get_block(bid)
+            #print("??:", bid)
+            tp = node.get_block(bid)
+            self.blockchain[bid] = pickle.loads(tp.data)
+            #self.blockchain[bid]=pickle.loads(self.blockchain[bid].data)
+            #print(type(self.blockchain[bid]))
         except:
+            print("expcet")
             pass #? TODO
 
     #choose a group of nodes with same len and hash
@@ -316,7 +326,12 @@ class ProcessNode(object):
         
         flag = 0
         for id in group:
-            blockheaders = nodes[id].get_block_headers()
+            try:
+                blockheaders = nodes[id].get_block_headers()
+                blockheaders = pickle.loads(blockheaders.data)
+            except:
+                group.remove(id)
+                continue
             if(self.verfity_blockheaders(blockheaders)):
                 flag = 1
             else:
@@ -326,23 +341,28 @@ class ProcessNode(object):
             return False
 
         self.blockchain = [None for i in range(len_bc)]
+        print(self.blockchain)
         coins_from_issuer={}
         coins_from_voter={}
         len_gp = len(group)
 
         #cur = 1
 
-        t = []
+        t = [None for i in range(len_gp)]
+        print("gp:",group)
         for i in range(0,len_bc,len_gp):
             for j in range(len_gp):
                 if(i+j>=len_bc):
                     break
-                t[j] = threading.Thread(self.RPC_get_block,(i,nodes[group[j]]))
+
+                print(i+j," : ", nodes[group[j]])
+                t[j] = threading.Thread(target=self.RPC_get_block, args = (i+j, nodes[group[j]]))
                 t[j].start()
 
             for j in range(len_gp):
                 t[j].join()
 
+            
             end = min(i+len_gp, len_bc)
             #check pointers
             for k in range(i, end):
@@ -361,7 +381,8 @@ class ProcessNode(object):
                     group.remove(k-i)
                     return False
                 else:
-                    putil.update_metadata(logic_block, self.blockchain[:k], coins_from_issuer, coins_from_voter)
+                    if(k!=0):
+                        putil.update_metadata(logic_block, self.blockchain[:k], coins_from_issuer, coins_from_voter)
                 #check block.roothash
                 # tmp_MerkleTree = MerkleTree(logic_block.transactions)
                 # if tmp_MerkleTree.get_hash() != logic_block.block.root_hash:
@@ -396,7 +417,7 @@ class ProcessNode(object):
             try:
                 t_len, t_hash = nodes[i].get_len_hash()
             except:
-                continue #?
+                continue
             key = str(t_len)+"::"+str(t_hash)
             if(key not in len_hash_map):
                 len_hash_map[key] = []
@@ -443,24 +464,29 @@ class ProcessNode(object):
 
     #the hash path in Merkle Tree
     def get_hash_path(self, block_id, transaction_id):
-        return self.blockchain[block_id].tree.get_hash_path(transaction_id)
+        return pickle.dumps(self.blockchain[block_id].tree.get_hash_path(transaction_id))
 
     #return hash of (hash1, hash2)
     def test_hash_path(self, hash1, hash2):
+
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+        #print("SS ",digest)
         digest.update(bytes.fromhex(hash1))
         digest.update(bytes.fromhex(hash2))
         return digest.finalize().hex()
 
     def get_transaction_position(self, transaction_hash):
-
+        print("-------1")
         for i in range(len(self.blockchain)):
-            transactions = self.blockchain[i].block.transacitons
+            if(i==0):
+                continue
+            transactions = self.blockchain[i].transactions
             if transactions is not None:
                 for j in range(len(transactions)):
                     if(transactions[j].to_hash()==transaction_hash):
-                        return i,j
+                        return pickle.dumps(i), pickle.dumps(j)
 
+        print("-------2")
         return None, None                
 
     #Simplified Payment Verification
@@ -476,20 +502,39 @@ class ProcessNode(object):
         
         con_cnt = 0
         spv_cnt = 0
-        cur_hash  = transaction_hash
+        
         for node in nodes:
-            if(node.check_connection()):
-                con_cnt += 1
+            cur_hash  = transaction_hash
+            try:
+                if(node.check_connection()):
+                    con_cnt += 1
+            except:
+                continue
 
-            block_headers = node.get_block_headers()
+            try:
+                block_headers = node.get_block_headers()
+            except:
+                continue
+            block_headers = pickle.loads(block_headers.data)
             if(not self.verfity_blockheaders(block_headers)):
                 continue
-            hash_path = node.get_hash_path(block_id, transaction_id)
+
+            try:
+                hash_path = node.get_hash_path(block_id, transaction_id)
+            except:
+                continue
+
+            hash_path = pickle.loads(hash_path.data)
+
             if(len(hash_path)==0 or len(block_headers)<=block_id):
                 continue
 
             for i in range(len(hash_path)):
-                cur_hash = self.test_hash_path(cur_hash, hash_path[i])
+                
+                if(hash_path[0]==0):
+                    cur_hash = self.test_hash_path(cur_hash, hash_path[i][1])
+                else:
+                    cur_hash = self.test_hash_path(hash_path[i][1],cur_hash)
 
             if(cur_hash != block_headers[block_id].root_hash):
                 continue
@@ -585,4 +630,4 @@ class ProcessNode(object):
             self.mining()
         self.is_mining = False
 
-pro = ProcessNode(None,[],0,"", {}, {'issuer_address':'http://localhost:12345/ISSUER'})
+# pro = ProcessNode(None,[],0,"", {}, {'issuer_address':'http://localhost:12345/ISSUER'})
