@@ -62,6 +62,10 @@ class ProcessNode(object):
         self.transactions_per_block = DEFAULT_TRANSACTIONS_PER_BLOCK
         self.mining_transactions = []
 
+        self.is_PM_server = 0
+        self.pm_miner_share = {}
+        self.stop = 0
+
         # try setting blockchain if someone else already online
         # for node in self.nodes:
         #     if node is not None:
@@ -630,4 +634,174 @@ class ProcessNode(object):
             self.mining()
         self.is_mining = False
 
+    def PM_check_hash(self, hash):
+        num_zeros = int(self.blockchain[0].block.num_zeros)
+        num_zeros = max(num_zeros-2, 1)
+        if hash[-num_zeros:] == '0'*num_zeros:
+            return True
+        return False
+
+    def RPC_nodes(self):
+        nodes = []
+        for i in range(len(self.node_addresses)):
+            if i == self.id:
+                continue
+            rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[i], allow_none=True)
+            nodes.append(rpc_obj)
+        return nodes
+
+    def RPC_PM_find_work(self):
+        pm_id = -1
+        tmpblock = None
+
+        nodes = self.RPC_nodes()
+        for i in range(len(nodes)):
+            work, tmpblock = nodes[i].PM_get_work(self.id)
+            if(work!=None and tmpblock!=None and putil.valid_block(tmpblock, self.blockchain, self.cur_coins_from_issuer)):
+                pm_id = i
+                break
+            else:
+                pm_id = -1 
+
+        return pm_id, work, tmpblock
+    
+    # def PM_check_tmpblock(self, tmpblock):
+    #     if(tmpblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
+    #         return False
+
+    #     coins_from_issuer=self.cur_coins_from_issuer.copy()
+    #     coins_from_voter=self. cur_coins_from_voter.copy()
+        
+    #     #check transactions
+    #     for transaction in tmpblock.transactions:
+    #         if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
+    #             return False
+    #     #check block.roothash
+    #     tmp_MerkleTree = MerkleTree(tmpblock.transactions)
+    #     if(tmp_MerkleTree.get_hash!=tmpblock.block.root_hash):
+    #         return False
+
+    #     return True
+
+    def next_work(self):
+        return 0
+
+    def build_tmpblock(self):
+        # 0 
+        pre_hash = self.blockchain[-1].block.to_hash()
+        
+        reward_transaction = Transaction((0,1), self.public, None, self.private)
+    
+        to_remove = []
+        self.mining_transactions = []
+        for transaction in self.pending_transactions:
+            if putil.valid_transaction(transaction, self.blockchain, self.cur_coins_from_issuer, self.mining_transactions):
+                self.mining_transactions.append(transaction)
+            to_remove.append(transaction)
+            if len(self.mining_transactions) == self.transactions_per_block:
+                break
+        for t in to_remove:
+            self.pending_transactions.remove(t)
+        # print('Length of pending transactions after removing elements in mining(): ', len(self.pending_transactions))
+        if len(self.mining_transactions) < self.transactions_per_block:
+            self.pending_transactions = self.mining_transactions
+            self.mining_transactions = []
+            return None
+            # verify transaction again with maybe a side pending transactions list
+
+        self.mining_transactions = [reward_transaction] + self.mining_transactions
+
+        nonce = 0
+        newblock = LogicalBlock(pre_hash, len(self.blockchain), self.mining_transactions, nonce)
+        
+        return newblock
+
+    def PM_get_work(self, id):
+        work = None
+        tmpblock = None
+
+        if(id not in self.pm_miner_share):
+            self.pm_miner_share[id] = 0
+        
+        work = self.next_work()
+        tmpblock = self.build_tmpblock()
+
+        return work, tmpblock
+
+    def PM_verify_block(self, tmpblock):
+        # if(tmpblock.prev_block_hash!=self.blockchain[len(self.blockchain)-1].block.to_hash()):
+        #         return False
+
+        # coins_from_issuer=self.coins_from_issuer.copy()
+        # coins_from_voter=self.coins_from_voter.copy()
+        
+        # #check transactions
+        # for transaction in tmpblock.transactions:
+        #     if(not self.verify_transaction(transaction, coins_from_issuer, coins_from_voter)):
+        #         return False
+        # #check block.roothash
+        # tmp_MerkleTree = MerkleTree(tmpblock.transactions)
+        # if(tmp_MerkleTree.get_hash!=tmpblock.block.root_hash):
+        #     return False
+
+        if(not putil.valid_block(tmpblock, self.blockchain, self.cur_coins_from_issuer)):
+            return False
+
+        if(not self.PM_check_hash(tmpblock.block.to_hash())):
+            return False
+
+        return True
+
+    def PM_stop(self, id):
+        if(id==self.pm_id):
+            self.stop = 1
+
+    def PM_send_share(self, id, block):
+        self.lock.acquire()
+        if(self.PM_verify_block(block)):
+            self.pm_miner_share[id]+=1
+        #lock
+        if(putil.valid_block(block, self.blockchain, self.cur_coins_from_issuer)):
+            self.blockchain.append(block)
+            putil.update_metadata(block, self.blockchain,self.cur_coins_from_issuer,self.cur_coins_from_voter)
+            self.lock.release()
+            self.RPC_add_block(block)
+            #new thread call stop, update state
+            for id in self.pm_miner_share.keys():
+                t1 = threading.Thread(self.nodes[id].PM_stop,(self.id))
+                t1.start()
+            #pay money
+            return 
+        else:
+            self.lock.release()
+            return 
+
+
+    def pool_mining_server(self, flag):
+        self.is_PM_server = flag
+
+        return 
+
+    def pool_mining_miner(self):
+
+        self.stop = 1
+        self.pm_id = -1
+        # pin() thread
+        nonce = 0
+        while(True):
+            if(self.stop == 1):
+                self.pm_id, work, tmpblock = self.RPC_PM_find_work()
+                nonce = work
+            if(self.pm_id!=-1):
+                self.stop = 0
+                
+                tmpblock.block.build_block_data(nonce)
+                if(self.check_hash(tmpblock.block.to_hash())):
+                    self.PM_send_share(self.id, tmpblock)
+                    self.stop = 1 
+
+                nonce = self.getnext(nonce)   
+            else:
+                time.sleep(10) 
+                pass       
 # pro = ProcessNode(None,[],0,"", {}, {'issuer_address':'http://localhost:12345/ISSUER'})
