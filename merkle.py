@@ -3,6 +3,7 @@
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from collections import Sequence
+import numbers
 
 class MerkleTreeIterator:
 
@@ -51,7 +52,18 @@ class MerkleTree(Sequence):
     #     return MerkleTreeIterator(self)
 
     def __getitem__(self, index):
-        return self.get_transaction(index)
+        transactions = []
+        # print('The slice is: ', index)
+        if isinstance(index, numbers.Integral):
+            return self.get_transaction(index)
+        start = index.start if index.start is not None else 0
+        step = index.step if index.step is not None else 1
+        stop = index.stop if index.stop is not None else self.size
+        # print('The stop of index object is', index.stop)
+        index = list(range(start, stop, step))
+        for i in index:
+            transactions.append(self.get_transaction(i))
+        return transactions
 
     def __len__(self):
         return self.size
@@ -72,6 +84,8 @@ class MerkleTree(Sequence):
 
     def get_transaction(self, i):
         """get a transaction base don its index in the original ist of transactions"""
+        # print('Size is inside get_Transaction: ', self.size)
+        # print('I is in get_transaction: ', i)
         if i < 0 or i >= self.size:
             raise IndexError("Not in range of values")
         if self.size == 1:

@@ -98,18 +98,18 @@ def valid_block(newblock, blockchain, coins_from_issuer):
         return False
 
     # check number of transactions
-    if len(newblock.transactions) != blockchain[0].block.block_size:
+    if len(newblock.tree) != blockchain[0].block.block_size:
         return False
 
     # check each transaction, except the mining transaction
-    block_transactions = newblock.transactions[0:1]
-    for transaction in newblock.transactions[1:]:
+    block_transactions = newblock.tree[0:1]
+    for transaction in newblock.tree[1:]:
         if not valid_transaction(transaction, blockchain, coins_from_issuer, block_transactions):
             return False
         block_transactions.append(transaction)
 
     # check if transaction merkle tree root hash matches
-    if MerkleTree(newblock.transactions).get_hash() != newblock.block.root_hash:
+    if MerkleTree(newblock.tree).get_hash() != newblock.block.root_hash:
         return False
 
     # Check if number of zeros in the block.tohash is the right amount
@@ -152,7 +152,7 @@ def update_metadata(new_block, blockchain, coins_from_issuer, coins_from_voter):
     """
 
     # update over each transaction in the block except the first mining transaction
-    for transaction in new_block.transactions[1:]:
+    for transaction in new_block.tree[1:]:
         # get source and destination of transaction
         (block_id, transaction_id) = transaction.src_transact_id
         if block_id == 0:

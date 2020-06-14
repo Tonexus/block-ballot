@@ -64,7 +64,7 @@ class LogicalBlock:
         print(type(transactions))
         self.tree = merkle.MerkleTree(transactions)
         self.block = self.build_block_data(nonce)
-        self.transactions = transactions
+        # self.transactions = transactions
 
     def build_block_data(self, nonce):
         """builds a block from the previously stored data and input nonce (in hex)"""

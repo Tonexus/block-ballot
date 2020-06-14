@@ -114,7 +114,7 @@ class Wallet:
             for block in reversed(longest_bc[1:]):
                 # loop through transactions in the block?
                 j = 0
-                for transaction_bc in block.transactions:
+                for transaction_bc in block.tree:
                     if self.transaction_hash == transaction_bc.to_hash(): # check src_transaction.public_key?
                         self.source_transaction_id = (i, j)
                         self.source_transaction_data = transaction_bc
@@ -142,7 +142,7 @@ class Wallet:
             for block in reversed(longest_bc[1:]):
                 # loop through transactions in the block?
                 j = 0
-                for transaction_bc in block.transactions:
+                for transaction_bc in block.tree:
                     if transaction.to_hash() == transaction_bc.to_hash(): # check src_transaction.public_key?
                         return (i, j), transaction_bc, self.transaction_hash
                     j+=1
@@ -185,7 +185,7 @@ class Wallet:
         b_id = 1
         for block in longest_bc[1:]:
             t_id = 0
-            for transaction in block.transactions:
+            for transaction in block.tree:
                 if transaction.dst_pub_key == public_key:
                     balance += 1
                     transaction_ids.append((b_id, t_id))
@@ -374,7 +374,7 @@ class Issuer(Wallet):
         b_id = 1
         for block in longest_bc[1:]:
             t_id = 0
-            for transaction in block.transactions:
+            for transaction in block.tree:
                 if transaction.dst_pub_key not in balances:
                     balances[transaction.dst_pub_key] = {'transaction_ids': [], 'balance': 0}
                 balances[transaction.dst_pub_key]['balance'] += 1
@@ -386,7 +386,7 @@ class Issuer(Wallet):
         b_id = 1
         for block in longest_bc[1:]:
             t_id = 0
-            for transaction in block.transactions:
+            for transaction in block.tree:
                 (b, t) = transaction.src_transact_id
                 balances[transactions_to_keys[b][t]]['balance'] -= 1
                 t_id += 1
