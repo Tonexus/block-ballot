@@ -61,7 +61,7 @@ def valid_transaction(transaction, blockchain, coins_from_issuer, block_transact
             # TODO shouldn't just check dest, need to also check if source
             # is issuer, otherwise prevents A registering and B voting for A
             # in the same block
-            if transaction_bc.dst_pub_key == dst_str:
+            if transaction_bc.dst_pub_key == dst_str and transaction_bc.src_transact_id == (0,0):
                 return False
         return True
 

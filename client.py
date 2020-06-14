@@ -60,13 +60,16 @@ issuer.set_nodes(pickle.dumps(config['node_addresses']))
 print("About to vote for someone")
 print("0 Votes for 2: ", ballots[0].vote(ballots[2].public))
 print("1 Votes for 2: ", ballots[1].vote(ballots[2].public))
+for i in range(4):
+	ballots.append(Ballot(config))
+	print("Registering ballot: ", ballots[-1].register())
 print("0 Votes for 2 again: ", ballots[0].vote(ballots[2].public))
 print("3 Votes for 2: ", ballots[3].vote(ballots[2].public))
 print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
 print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
 print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
 
-for i in range(24):
+for i in range(20):
 	ballots.append(Ballot(config))
 	print("Registering ballot: ", ballots[-1].register())
 

@@ -1,5 +1,5 @@
 {
-    "issuer_config": { "num_zeros": 2, "transactions_per_block": 30 },
+    "issuer_config": { "num_zeros": 3, "transactions_per_block": 6 },
     "processor_config": {
         "initblockchain": "None",
         "voters_map": {},
