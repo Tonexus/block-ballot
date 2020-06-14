@@ -20,6 +20,9 @@ class Block:
         digest.update(bytes.fromhex(self.root_hash))
         return digest.finalize().hex()
 
+    def to_string(self):
+        return self.__dict__
+
 class GenesisBlock:
     def __init__(self, issr_pub_key, metadata, num_zeros, block_size):
         self.issr_pub_key = issr_pub_key.public_bytes(
@@ -38,7 +41,12 @@ class GenesisBlock:
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.issr_pub_key))
         digest.update(self.metadata.encode("ascii"))
+        digest.update(str(self.num_zeros).encode("ascii"))
+        digest.update(str(self.block_size).encode("ascii"))
         return digest.finalize().hex()
+
+    def to_string(self):
+        return self.__dict__
 
 class LogicalBlock:
     """holds block data and metadata for processor node"""
@@ -53,6 +61,7 @@ class LogicalBlock:
             self.block = None
             self.transactions = None
             return
+        print(type(transactions))
         self.tree = merkle.MerkleTree(transactions)
         self.block = self.build_block_data(nonce)
         self.transactions = transactions
@@ -64,3 +73,16 @@ class LogicalBlock:
     def get_transaction(self, i):
         """find the transaction in the merkle tree with index i"""
         return self.tree.get_transaction(i)
+
+    def to_string(self):
+        ret = self.__dict__
+        ret['block_hash'] = self.block.to_hash()
+        ret['block'] = self.block.to_string()
+        if self.tree is not None:
+            ret['tree'] = self.tree.to_string()
+        if self.transactions is not None:
+            transaction_str = []
+            for transaction in self.transactions:
+                transaction_str.append(transaction.to_string())
+            ret['transactions'] = transaction_str
+        return ret

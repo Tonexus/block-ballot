@@ -28,6 +28,9 @@ class Transaction:
             hashes.SHA256()
         ).hex()
 
+    def to_string(self):
+        return self.__dict__
+
     def to_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
         digest.update(bytes.fromhex(self.dst_pub_key))

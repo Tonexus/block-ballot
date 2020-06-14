@@ -65,7 +65,6 @@ print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
 print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
 print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
 
-print(len(ballots[0].get_blockchain()))
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
@@ -74,3 +73,28 @@ for node_address in config['node_addresses']:
 	except:
 		print('Probably a key error')
 issuer.set_nodes(pickle.dumps(config['node_addresses']))
+print("-------------------  DONE ------------------")
+print("-------------------  DONE ------------------")
+print("-------------------  DONE ------------------")
+print("-------------------  DONE ------------------")
+print("-------------------  DONE ------------------")
+
+
+
+
+
+for block in ballots[0].get_blockchain()[1:]:
+	print('------ begin block-------')
+	print('------- end block -------')
+	print(len(block.tree))
+	for transaction in block.tree:
+		print(transaction.to_string())
+
+# print(list(map(lambda x : x.to_string(), ballots[0].get_blockchain())))
+
+
+
+
+
+
+

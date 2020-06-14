@@ -2,11 +2,31 @@
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from collections import Sequence
 
-class MerkleTree:
+class MerkleTreeIterator:
+
+    def __init__(self, tree):
+        self._tree = tree
+        self._index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        print('next is called')
+        self._index += 1
+        try:
+            return self._tree.get_transaction(self._index - 1)
+        except IndexError:
+            self._index = 0
+            raise StopIteration
+
+class MerkleTree(Sequence):
     """Merkle tree of transactions"""
     def __init__(self, transacts):
         """Initialize from list of transactions"""
+        self.idx = 0
         self.size = len(transacts)
         if self.size == 0:
             raise ValueError("No empty tree")
@@ -26,6 +46,25 @@ class MerkleTree:
             digest.update(bytes.fromhex(self.left.digest))
             digest.update(bytes.fromhex(self.right.digest))
             self.digest = digest.finalize().hex()
+
+    # def __iter__(self):
+    #     return MerkleTreeIterator(self)
+
+    def __getitem__(self, index):
+        return self.get_transaction(index)
+
+    def __len__(self):
+        return self.size
+
+    def to_string(self):
+        ret = self.__dict__
+        if self.left is not None:
+            ret['left'] = self.left.to_string()
+        if self.right is not None:
+            ret['right'] = self.right.to_string()
+        if self.transact_data is not None:
+            ret['transact_data'] = self.transact_data.to_string()
+        return ret
 
     def get_hash(self):
         """get the hash at the current level"""

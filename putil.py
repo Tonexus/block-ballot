@@ -9,19 +9,39 @@ from block import GenesisBlock
 class YouAreBad(Exception):
     """Exception to throw when you are bad"""
 
+def check_hash(hash, blockchain):
+        #pre 0
+        if len(blockchain) == 0:
+            return False # ?
+        num_zeros = int(blockchain[0].block.num_zeros)
+        if hash[-num_zeros:] == '0'*num_zeros:
+            return True
+        return False
+
 def valid_transaction(transaction, blockchain, coins_from_issuer, block_transactions):
     """
     Checks if a new transaction is valid given the metadata,
     prior transactions in the block, and the blockchain
     """
-
+    # Should we check if the blockchain is valid first?
     # get source and destination of transaction
     (block_id, transaction_id) = transaction.src_transact_id
     if block_id == 0:
+        if len(blockchain) == 0:
+            # invalid blockchain
+            return False
         src_str = blockchain[0].block.issr_pub_key
     else:
-        src_str = blockchain[block_id].get_transaction(transaction_id).dst_pub_key
-    src_key = load_pem_public_key(bytes.fromhex(src_str), backend=default_backend())
+        try:
+            src_str = blockchain[block_id].get_transaction(transaction_id).dst_pub_key
+        except:
+            # Some error gettting the transaction either wrong block_id or wrong transaction_id
+            return False
+    try:
+        src_key = load_pem_public_key(bytes.fromhex(src_str), backend=default_backend())
+    except:
+        # Some error making the key
+        return False
     dst_str = transaction.dst_pub_key
 
     # check if transaction signature is valid
@@ -92,6 +112,10 @@ def valid_block(newblock, blockchain, coins_from_issuer):
     if MerkleTree(newblock.transactions).get_hash() != newblock.block.root_hash:
         return False
 
+    # Check if number of zeros in the block.tohash is the right amount
+    if not check_hash(newblock.block.to_hash(), blockchain):
+        return False
+
     return True
 
 def valid_blockchain(blockchain):
@@ -103,6 +127,8 @@ def valid_blockchain(blockchain):
     # initialize metadata
     coins_from_issuer = {}
     coins_from_voter = {}
+    if len(blockchain) == 0:
+        return None, None
     if not isinstance(blockchain[0].block, GenesisBlock):
         return None, None
     new_blockchain = [blockchain[0]]

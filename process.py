@@ -34,10 +34,12 @@ class ProcessNode(object):
         # wallet metadata on blockchain
         self.cur_coins_from_issuer = {}
         self.cur_coins_from_voter = {}
-        print('My id is: ', node_id)
         self.id = node_id
 
-        self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
+        try:
+            self.issuer = xmlrpc.client.ServerProxy(config['issuer_address'], allow_none=True)
+        except:
+            self.issuer = None
         self.issuer_id = issuer_id
         self.voters_map = voters_map
 
@@ -66,7 +68,7 @@ class ProcessNode(object):
             if node is not None:
                 try:
                     other_bc = node.get_blockchain()
-                    if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].to_hash():
+                    if len(other_bc) > len(self.blockchain):
                         coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
                         if coins_from_issuer is not None:
                             self.blockchain = other_bc
@@ -106,7 +108,6 @@ class ProcessNode(object):
         self.is_mining = False
         self.mining_transactions = []
         self.recieved_new_block = False
-        print("End of set genesis block, length of blockchain should be 1 but is: ", len(self.blockchain))      
 
     #other process nodes or Issuer can call this
     #if the blockchain is verified, update self.blockchain with it
