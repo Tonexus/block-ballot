@@ -404,6 +404,9 @@ class Issuer(Wallet):
             b_id += 1
         return balances
 
+    def get_transactions_per_block(self):
+        return self.transactions_per_block
+
 
     def get_pkey(self, src):
         pass

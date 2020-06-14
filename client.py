@@ -4,6 +4,7 @@ import pickle
 from ballot import Ballot
 
 import putil
+import random
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -33,20 +34,49 @@ def print_processor_wallets(issuer, ballots):
 	for pk in balances:
 		if balances[pk] is not None:
 			print('--- Issuer/Processor balance is --- ', balances[pk]['balance'])
-
+NUM_VOTERS = issuer.get_transactions_per_block()*5
 try:
-	print(issuer.start_election())
+	print('Starting the election by sending the issuers public key:', issuer.start_election())
 except:
 	print('The Issuer is not up')
 	exit()
+print('The number of transactions per block is ', issuer.get_transactions_per_block(), '. Thus transactions will be verified after every ', issuer.get_transactions_per_block(), ' transsactions are posted.')
+print('First we register ', str(NUM_VOTERS), ' Voters where each registration is a separate transaction.')
 ballots = []
-for i in range(30):
+for i in range(NUM_VOTERS):
 	ballots.append(Ballot(config))
 	print("Registering ballot: ", ballots[i].register())
+print("Now for each registered ballot we check the wallet balance to verify that they are actually registered. Each should be 1.")
+for i in range(NUM_VOTERS):
+	print('Voter', str(i),' balance is: ', ballots[i].tally())
+# for node_address in config['node_addresses']:
+# 	issuer.set_nodes(pickle.dumps([node_address]))
+# 	try:
+# 		print_processor_wallets(issuer, ballots)
+# 	except:
+# 		print('Probably a key error')
+# 	break
+# issuer.set_nodes(pickle.dumps(config['node_addresses']))
 
-print("---------- About to check balance -----------")
-for i in range(30):
-	print('My balance is: ', ballots[i].tally())
+print("About to vote for user 0 or 1 at random for all voters")
+for i in range(NUM_VOTERS):
+	voter = i
+	candidate = random.choice(range(0, 2))
+	print(str(i), ' votes for ', str(candidate), ':', ballots[voter].vote(ballots[candidate].public))
+# print("0 Votes for 2: ", ballots[0].vote(ballots[2].public))
+# print("1 Votes for 2: ", ballots[1].vote(ballots[2].public))
+# for i in range(4):
+# 	ballots.append(Ballot(config))
+# 	print("Registering ballot: ", ballots[-1].register())
+# print("0 Votes for 2 again: ", ballots[0].vote(ballots[2].public))
+# print("3 Votes for 2: ", ballots[3].vote(ballots[2].public))
+# print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
+# print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
+# print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
+
+# for i in range(20):
+# 	ballots.append(Ballot(config))
+# 	print("Registering ballot: ", ballots[-1].register())
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
@@ -55,36 +85,13 @@ for node_address in config['node_addresses']:
 	except:
 		print('Probably a key error')
 	break
+print('Note the balances all total up to zero as any negative balance by the issuer was either a registration or the reward coins.')
 issuer.set_nodes(pickle.dumps(config['node_addresses']))
-
-print("About to vote for someone")
-print("0 Votes for 2: ", ballots[0].vote(ballots[2].public))
-print("1 Votes for 2: ", ballots[1].vote(ballots[2].public))
-for i in range(4):
-	ballots.append(Ballot(config))
-	print("Registering ballot: ", ballots[-1].register())
-print("0 Votes for 2 again: ", ballots[0].vote(ballots[2].public))
-print("3 Votes for 2: ", ballots[3].vote(ballots[2].public))
-print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
-print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
-print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
-
-for i in range(20):
-	ballots.append(Ballot(config))
-	print("Registering ballot: ", ballots[-1].register())
-
-for node_address in config['node_addresses']:
-	issuer.set_nodes(pickle.dumps([node_address]))
-	try:
-		print_processor_wallets(issuer, ballots)
-	except:
-		print('Probably a key error')
-issuer.set_nodes(pickle.dumps(config['node_addresses']))
-print("-------------------  DONE ------------------")
-print("-------------------  DONE ------------------")
-print("-------------------  DONE ------------------")
-print("-------------------  DONE ------------------")
-print("-------------------  DONE ------------------")
+# print("-------------------  DONE ------------------")
+# print("-------------------  DONE ------------------")
+# print("-------------------  DONE ------------------")
+# print("-------------------  DONE ------------------")
+# print("-------------------  DONE ------------------")
 
 
 
@@ -96,8 +103,12 @@ print("-------------------  DONE ------------------")
 # 	print(len(block.tree))
 # 	for transaction in block.tree:
 # 		print(transaction.to_string())
-
-print(list(map(lambda x : x.to_string(), ballots[0].get_blockchain())))
+print('Writing to blockchain.json: Note there may exist a file already so append a line with "-----" before this blockchain')
+with open('blockchain.json', 'a') as file:
+	file.write('\n-------\n')
+	chain = list(map(lambda x : x.to_string(), ballots[0].get_blockchain()))
+	for block in chain:
+		file.write(str(block))
 
 
 
