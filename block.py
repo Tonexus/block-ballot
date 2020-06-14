@@ -61,7 +61,6 @@ class LogicalBlock:
             self.block = None
             self.transactions = None
             return
-        print(type(transactions))
         self.tree = merkle.MerkleTree(transactions)
         self.block = self.build_block_data(nonce)
         # self.transactions = transactions
@@ -80,9 +79,4 @@ class LogicalBlock:
         ret['block'] = self.block.to_string()
         if self.tree is not None:
             ret['tree'] = self.tree.to_string()
-        if self.transactions is not None:
-            transaction_str = []
-            for transaction in self.transactions:
-                transaction_str.append(transaction.to_string())
-            ret['transactions'] = transaction_str
         return ret

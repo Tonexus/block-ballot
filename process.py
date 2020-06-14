@@ -83,8 +83,8 @@ class ProcessNode(object):
         #             pass
 
         self.RPC_get_blockchain()
-        if(self.blockchain is not None and len(self.blockchain)!=0):
-            print(self.blockchain[-1].block.to_hash())
+        # if(self.blockchain is not None and len(self.blockchain)!=0):
+        #     print(self.blockchain[-1].block.to_hash())
 
     #get a voter's public key
     def get_pkey(self, id):
@@ -95,7 +95,7 @@ class ProcessNode(object):
     def set_genesis(self, public_key, num_zeros, num_transactions):
         pk_bytes = bytes.fromhex(public_key)
         public_key = load_pem_public_key(pk_bytes, backend=default_backend())
-        self.genesis_block = GenesisBlock(public_key, "", num_zeros, DEFAULT_TRANSACTIONS_PER_BLOCK + 1)
+        self.genesis_block = GenesisBlock(public_key, "", num_zeros, num_transactions + 1)
         logical_block = LogicalBlock("", 0, None, None)
         logical_block.block = self.genesis_block
         self.blockchain = [logical_block]
@@ -151,12 +151,8 @@ class ProcessNode(object):
     def add_transaction(self, transaction, id):
         #lock here
         self.lock.acquire()
-        # print(transaction)
-        # print("Type of transaction: ",type(transaction))
         transaction = pickle.loads(transaction.data)
-        # print("After pickle.load")
         if putil.valid_transaction(transaction, self.blockchain, self.cur_coins_from_issuer, []):
-            # print("Inside if on add_transaction", id)
             self.pending_transactions.append(transaction)
             if len(self.pending_transactions) == self.transactions_per_block and not self.is_mining:
                 # Call mining
@@ -171,7 +167,6 @@ class ProcessNode(object):
             self.lock.release()
             return True
         else:
-            # print("Inside else, inside add_transaction, about to return false")
             self.lock.release()
             return False
         
@@ -187,46 +182,35 @@ class ProcessNode(object):
     def add_block(self, newblock, id):  
         #lock here
         self.lock.acquire()
-        print('Inside add_block and my id is: ', self.id, ': The id that called this is: ', id)
         if id != self.id:
             newblock = pickle.loads(newblock.data)
-            print(newblock)
-            # print(pickle.loads(newblock))
-        print("Length of self.blockchain: ", len(self.blockchain))
         if not putil.valid_block(newblock, self.blockchain, self.cur_coins_from_issuer):
             if id == self.id:
-                print('The block was not valid and we called it on ourselves.')
                 self.lock.release()
                 return False
-            print('The block was not valid and someone else called it on us.')
 
             # get their blockchain
             # if theirs is longer then verify and set to ours
             # else i don't care if theyre behind
             # self.nodes_lock.acquire()
-            print('The other guy"s address is:', self.node_addresses[id])
             try:
                 rpc_obj = xmlrpc.client.ServerProxy(self.node_addresses[id], allow_none=True)
                 other_bc = pickle.loads(rpc_obj.get_blockchain().data)
             except:
                 # The other guy didn't respond so ignore
                 return False
-            print('Get blockchain has returned')
             # self.nodes_lock.release()
             if len(other_bc) > len(self.blockchain) and other_bc[0].block.to_hash() == self.blockchain[0].block.to_hash():
                 coins_from_issuer, coins_from_voter = putil.valid_blockchain(other_bc)
                 if coins_from_issuer is None:
-                    print('Other persons blockchain was not valid')
                     self.lock.release()
                     return False
                 else:
-                    print('Other blockchain is valid and longer then us')
                     self.cur_coins_from_issuer = coins_from_issuer
                     self.cur_coins_from_voter = coins_from_voter
                     self.blockchain = other_bc
                     self.lock.release()
                     return True
-            print('Other blockchain was not valid or not longer then us')
             # t1 = threading.Thread(target=self.nodes[id].update_blockchain,args=(self.blockchain))
             # t1.start()
             self.lock.release()
@@ -238,12 +222,11 @@ class ProcessNode(object):
                 # we called add_block on ourselves
                 # probabl;y do nothing else
             # readd mining_transactions to pending maybe
-            if id == self.id:
-                print('Valid block received from ourselves')
-            else:
-                print('Valid block recieved from someone else')
+            # if id == self.id:
+            #     print('Valid block received from ourselves')
+            # else:
+            #     print('Valid block recieved from someone else')
             if self.is_mining and id is not self.id:
-                print('Recieved valid block from somone else. ID = ', id)
                 self.recieved_new_block = True
                 # self.mining_thread.terminate()
                 if len(self.mining_transactions) > 0:
@@ -280,7 +263,6 @@ class ProcessNode(object):
             # t1.start()
 
     def get_blockchain(self):
-        print('Get blockchain called')
         return pickle.dumps(self.blockchain)
 
     #get the len of blockchain and current block hash
@@ -346,7 +328,7 @@ class ProcessNode(object):
             return False
 
         self.blockchain = [None for i in range(len_bc)]
-        print(self.blockchain)
+        # print(self.blockchain)
         coins_from_issuer={}
         coins_from_voter={}
         len_gp = len(group)
@@ -354,13 +336,13 @@ class ProcessNode(object):
         #cur = 1
 
         t = [None for i in range(len_gp)]
-        print("gp:",group)
+        # print("gp:",group)
         for i in range(0,len_bc,len_gp):
             for j in range(len_gp):
                 if(i+j>=len_bc):
                     break
 
-                print(i+j," : ", nodes[group[j]])
+                # print(i+j," : ", nodes[group[j]])
                 t[j] = threading.Thread(target=self.RPC_get_block, args = (i+j, nodes[group[j]]))
                 t[j].start()
 
@@ -481,7 +463,7 @@ class ProcessNode(object):
         return digest.finalize().hex()
 
     def get_transaction_position(self, transaction_hash):
-        print("-------1")
+        # print("-------1")
         for i in range(len(self.blockchain)):
             if(i==0):
                 continue
@@ -491,7 +473,7 @@ class ProcessNode(object):
                     if(transactions[j].to_hash()==transaction_hash):
                         return pickle.dumps(i), pickle.dumps(j)
 
-        print("-------2")
+        # print("-------2")
         return None, None                
 
     #Simplified Payment Verification
@@ -621,9 +603,9 @@ class ProcessNode(object):
                     self.mining_transactions = []
                     self.lock.release()
                     break
-                print("About to call rpc add block", newblock)
+                # print("About to call rpc add block", newblock)
                 self.RPC_add_block(newblock)
-                print("After RPC add block")
+                # print("After RPC add block")
                 self.interrupt_mining = 1
                 self.mining_transactions = []
                 break 

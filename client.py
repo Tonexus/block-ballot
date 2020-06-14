@@ -40,12 +40,12 @@ except:
 	print('The Issuer is not up')
 	exit()
 ballots = []
-for i in range(12):
+for i in range(30):
 	ballots.append(Ballot(config))
 	print("Registering ballot: ", ballots[i].register())
 
 print("---------- About to check balance -----------")
-for i in range(12):
+for i in range(30):
 	print('My balance is: ', ballots[i].tally())
 
 for node_address in config['node_addresses']:
@@ -54,6 +54,7 @@ for node_address in config['node_addresses']:
 		print_processor_wallets(issuer, ballots)
 	except:
 		print('Probably a key error')
+	break
 issuer.set_nodes(pickle.dumps(config['node_addresses']))
 
 print("About to vote for someone")
@@ -65,6 +66,9 @@ print("4 Votes for 7: ", ballots[4].vote(ballots[7].public))
 print("5 Votes for 7: ", ballots[5].vote(ballots[7].public))
 print("6 Votes for 0: ", ballots[6].vote(ballots[0].public))
 
+for i in range(24):
+	ballots.append(Ballot(config))
+	print("Registering ballot: ", ballots[-1].register())
 
 for node_address in config['node_addresses']:
 	issuer.set_nodes(pickle.dumps([node_address]))
@@ -83,14 +87,14 @@ print("-------------------  DONE ------------------")
 
 
 
-for block in ballots[0].get_blockchain()[1:]:
-	print('------ begin block-------')
-	print('------- end block -------')
-	print(len(block.tree))
-	for transaction in block.tree:
-		print(transaction.to_string())
+# for block in ballots[0].get_blockchain()[1:]:
+# 	print('------ begin block-------')
+# 	print('------- end block -------')
+# 	print(len(block.tree))
+# 	for transaction in block.tree:
+# 		print(transaction.to_string())
 
-# print(list(map(lambda x : x.to_string(), ballots[0].get_blockchain())))
+print(list(map(lambda x : x.to_string(), ballots[0].get_blockchain())))
 
 
 
