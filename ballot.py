@@ -276,6 +276,17 @@ class Ballot(Wallet):
                 return True
         return False
 
+    def SPV(self):
+        bid, tid = self.nodes[0].get_transaction_position(self.transaction_hash)
+        bid = pickle.loads(bid.data)
+        tid = pickle.loads(tid.data)
+
+        print("flag:", bid, " : ",tid)
+        if(bid is not None and tid is not None):
+            return self.nodes[0].SPV_transaction(bid,tid,self.transaction_hash)
+        else:
+            return False
+
     def tally(self):
         """ Tally the votes for the public addresses in public key"""
         return self.check_balance(self.public)

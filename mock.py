@@ -50,45 +50,49 @@ print('%s users of %s not registered' % (num_not_registered, NUM_VOTERS))
 
 
 
-# print(issuer.start_election())
+print(issuer.start_election())
 
 
-# b = Ballot(config)
-# # print(b.public.public_bytes(
-# #             encoding=serialization.Encoding.PEM,
-# #             format=serialization.PublicFormat.SubjectPublicKeyInfo
-# #         ).hex())
+b = Ballot(config)
+# print(b.public.public_bytes(
+#             encoding=serialization.Encoding.PEM,
+#             format=serialization.PublicFormat.SubjectPublicKeyInfo
+#         ).hex())
+print(b.register())
 # print(b.register())
-# # print(b.register())
-# b1 = Ballot(config)
-# print(b1.register())
-# # bc = processor.get_blockchain()
-# # bc = pickle.loads(bc.data)
-# # print(len(bc[1].transactions))
+b1 = Ballot(config)
+print(b1.register())
+# bc = processor.get_blockchain()
+# bc = pickle.loads(bc.data)
+# print(len(bc[1].transactions))
 
-# ballots = []
-# for i in range(4):
-# 	ballots.append(Ballot(config))
-# 	print("Registering ballot: ", ballots[i].register())
-# print("---------- About to check balance -----------")
-# print("My Balance is: ", b.tally())
-# print("My Balance is: ", b1.tally())
-# print("My Balance is: ", ballots[0].tally())
-# print("My Balance is: ", ballots[1].tally())
-# print("My Balance is: ", ballots[2].tally())
-# print("My Balance is: ", ballots[3].tally())
-# # print("The blockchain is valid?: ", b.get_blockchain())
+ballots = []
+for i in range(4):
+	ballots.append(Ballot(config))
+	print("Registering ballot: ", ballots[i].register())
+print("---------- About to check balance -----------")
+print("My Balance is: ", b.tally())
+print("My Balance is: ", b1.tally())
+print("My Balance is: ", ballots[0].tally())
+print("My Balance is: ", ballots[1].tally())
+print("My Balance is: ", ballots[2].tally())
+print("My Balance is: ", ballots[3].tally())
+# print("The blockchain is valid?: ", b.get_blockchain())
 
-# print("About to vote for someone")
-# print("Vote is: ", ballots[0].vote(ballots[2].public))
-# print("Vote is: ", ballots[1].vote(ballots[2].public))
-# print("Vote is: ", ballots[0].vote(ballots[2].public))
-# print("Vote is: ", ballots[3].vote(ballots[2].public))
-# print("Vote is: ", b.vote(ballots[2].public))
-# # print("Vote is: ", ballots[0].vote(ballots[3].public))
-# # print("Retry the vote is: ", ballots[2].vote(ballots[1].public))
+print("About to vote for someone")
+print("Vote is: ", ballots[0].vote(ballots[2].public))
+print("Vote is: ", ballots[1].vote(ballots[2].public))
+print("Vote is: ", ballots[0].vote(ballots[2].public))
+print("Vote is: ", ballots[3].vote(ballots[2].public))
+print("Vote is: ", b.vote(ballots[2].public))
+# print("Vote is: ", ballots[0].vote(ballots[3].public))
+# print("Retry the vote is: ", ballots[2].vote(ballots[1].public))
 
-# # print("Winner results: ", issuer.get_winner())
-# balances = issuer.get_winner()
-# for pub_key in balances:
-# 	print(pub_key[50:60], ' --- balance is --- ', balances[pub_key]['balance'])
+# print("Winner results: ", issuer.get_winner())
+balances = issuer.get_winner()
+for pub_key in balances:
+	print(pub_key[50:60], ' --- balance is --- ', balances[pub_key]['balance'])
+
+
+print("SPV: ", ballots[3].SPV())
+print("!!:", ballots[3].get_blockchain()[-1].block.to_hash())
